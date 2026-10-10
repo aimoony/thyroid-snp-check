@@ -6,7 +6,7 @@
 <!-- The page cannot make any network request: connect-src 'none' blocks fetch/XHR/beacons,
      default-src 'none' blocks every external script, image, font and frame. -->
 <meta http-equiv="Content-Security-Policy"
-      content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+      content="default-src 'none'; script-src 'unsafe-inline' https://gc.zgo.at; style-src 'unsafe-inline'; img-src data: blob: https://aimoony.goatcounter.com; connect-src https://aimoony.goatcounter.com; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Thyroid SNP Check</title>
 <meta name="description" content="Check your 23andMe, AncestryDNA, MyHeritage or FTDNA raw data for thyroid-related and common SNPs. Runs entirely in your browser; your file is never uploaded.">
@@ -158,7 +158,7 @@ footer{border-top:1px solid var(--line);margin-top:48px;padding-top:16px;font-si
  .actions #dl-html{grid-column:1/-1}}
 @media print{.site-head,#landing,.donate{display:none!important}.print-only{display:block!important}}
 </style>
-
+<script data-goatcounter="https://aimoony.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
 <header class="site-head"><div class="in">
@@ -197,7 +197,7 @@ footer{border-top:1px solid var(--line);margin-top:48px;padding-top:16px;font-si
  <div class="grid3 tight">
   <div class="card feat"><h3>Thyroid first</h3><p>Conversion, TSH and Hashimoto's/Graves' genes that methylation tools like Genetic Genie skip.</p></div>
   <div class="card feat"><h3>Plain English</h3><p>What each result means, how many copies you carry and how strong the evidence is.</p></div>
-  <div class="card feat"><h3>Private</h3><p>Analysed in your browser and never uploaded. The page is blocked from sending data anywhere.</p></div>
+  <div class="card feat"><h3>Private</h3><p>Analysed in your browser and never uploaded. The page can only send an anonymous page-view count to GoatCounter, never your data.</p></div>
   <div class="card feat"><h3>Free</h3><p>No account, no cost. The code is on <a id="repo-link" href="#" target="_blank" rel="noopener noreferrer">GitHub</a>.</p></div>
  </div>
 </div>

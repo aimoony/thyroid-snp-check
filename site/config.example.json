@@ -1,0 +1,25 @@
+{
+  "repo_url": "https://github.com/aimoony/thyroid-snp-check",
+  "site_url": "https://aimoony.github.io/thyroid-snp-check/",
+  "donate": {
+    "venmo": "",
+    "cashapp": "",
+    "paypal": ""
+  },
+  "support": {
+    "title": "Support me",
+    "message": [
+      "A short note about you."
+    ],
+    "contact_url": "",
+    "contact_label": "Work with me",
+    "substack": "",
+    "linkedin": "",
+    "photo": "",
+    "photo_alt": ""
+  },
+  "analytics": {
+    "provider": "",
+    "id": ""
+  }
+}

@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- The page cannot make any network request: connect-src 'none' blocks fetch/XHR/beacons,
+     default-src 'none' blocks every external script, image, font and frame. -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Thyroid SNP Check</title>
+<meta name="description" content="Check your 23andMe, AncestryDNA, MyHeritage or FTDNA raw data for thyroid-related and common SNPs. Runs entirely in your browser; your file is never uploaded.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6c-3 0-4 3-6 3S4 8 4 14s4 10 8 10c2 0 3-2 4-4 1 2 2 4 4 4 4 0 8-4 8-10s-4-5-6-5-3-3-6-3z' fill='%232f5d8a'/%3E%3C/svg%3E">
+<style id="rcss">
+:root{--bg:#f7f7f5;--card:#fff;--ink:#1d1d1f;--muted:#6b6b70;--line:#e4e4e0;--accent:#2f5d8a;--accent-ink:#fff;
+--typ-bg:#e9f5ec;--typ:#1f6b37;--het-bg:#fff4dc;--het:#8a5a00;--hom-bg:#fde8e6;--hom:#a3261b;
+--good-bg:#e4f1fb;--good:#1d5d8f;--info-bg:#efeff3;--info:#55555c;--chk-bg:#f3e8fb;--chk:#6c2f91}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141416;--card:#1d1d20;
+--ink:#ececef;--muted:#9a9aa2;--line:#2e2e33;--accent:#8db8e0;--accent-ink:#0f1a24;--typ-bg:#183322;--typ:#86d29d;
+--het-bg:#3a2d10;--het:#f2c46b;--hom-bg:#3d1a17;--hom:#ff9b90;--good-bg:#16283a;--good:#8fc4ef;
+--info-bg:#26262b;--info:#b4b4bb;--chk-bg:#2e1f3a;--chk:#d3a6f2;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141416;--card:#1d1d20;
+--ink:#ececef;--muted:#9a9aa2;--line:#2e2e33;--accent:#8db8e0;--accent-ink:#0f1a24;--typ-bg:#183322;--typ:#86d29d;
+--het-bg:#3a2d10;--het:#f2c46b;--hom-bg:#3d1a17;--hom:#ff9b90;--good-bg:#16283a;--good:#8fc4ef;
+--info-bg:#26262b;--info:#b4b4bb;--chk-bg:#2e1f3a;--chk:#d3a6f2;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,"Segoe UI",
+Roboto,Helvetica,Arial,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:28px;margin:0 0 4px}h2{font-size:21px;margin:40px 0 12px;padding-top:8px;
+border-top:2px solid var(--line)}h3{font-size:16px;margin:28px 0 8px;color:var(--accent)}
+.sub{color:var(--muted);margin:0 0 20px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.card>b{display:block;font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;
+letter-spacing:.03em}.card .big{font-size:22px;font-weight:700;margin-top:2px}
+.warn{background:var(--het-bg);border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-size:14px}
+ul.find{margin:6px 0 0;padding-left:18px}ul.find li{margin:3px 0}
+.tbl{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);background:var(--card)}
+tr:last-child td{border-bottom:0}
+td.gt{font-family:Consolas,Menlo,monospace;font-weight:700;font-size:15px;white-space:nowrap}
+td.rs{font-family:Consolas,Menlo,monospace;font-size:12.5px;white-space:nowrap}
+td.rs a{color:var(--accent);text-decoration:none}
+.chip{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+.typical,.neutral{background:var(--typ-bg);color:var(--typ)}.het{background:var(--het-bg);color:var(--het)}
+.hom{background:var(--hom-bg);color:var(--hom)}.good{background:var(--good-bg);color:var(--good)}
+.info,.missing,.nocall{background:var(--info-bg);color:var(--info)}.check{background:var(--chk-bg);color:var(--chk)}
+.ev{font-size:12px;color:var(--muted)}.note{display:block;margin-top:4px;font-weight:600}
+.desc{min-width:320px}
+.small{font-size:13px;color:var(--muted)}
+nav.rnav{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;margin:8px 0 0}
+nav.rnav a{color:var(--accent)}
+.sub,p,li{overflow-wrap:anywhere}
+h2,h3{scroll-margin-top:56px}
+td .lbl{display:none}
+details.reveal{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:12px 0}
+details.reveal summary{cursor:pointer;font-weight:600;color:var(--accent)}
+details.reveal[open] summary{margin-bottom:10px}
+@media (max-width:720px){
+ main{padding:16px 16px 48px}
+ h1{font-size:22px;line-height:1.25}
+ h2{font-size:19px;margin-top:32px}
+ nav.rnav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;flex-wrap:nowrap;overflow-x:auto;gap:8px;margin:12px -16px 0;
+  padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:none}
+ nav.rnav::-webkit-scrollbar{display:none}
+ nav.rnav a{flex:0 0 auto;white-space:nowrap;text-decoration:none;font-size:13px;padding:6px 12px;
+  border-radius:99px;background:var(--card);border:1px solid var(--line)}
+ .cards{grid-template-columns:1fr 1fr;gap:10px}
+ .cards .card.wide{grid-column:1/-1}
+ .card{padding:12px 14px}.card .big{font-size:20px}
+ ul.find{padding-left:0;list-style:none}
+ ul.find li{margin:0;padding:10px 0;border-top:1px solid var(--line)}
+ ul.find li:first-child{border-top:0}
+ .tbl.snps{background:none;border:0;overflow:visible}
+ .tbl.snps table,.tbl.snps tbody{display:block}
+ .tbl.snps thead{display:none}
+ .tbl.snps tr{display:grid;grid-template-columns:1fr 1fr auto;column-gap:12px;row-gap:6px;
+  grid-template-areas:"g g res" "v v res" "rs you eff" "desc desc desc";
+  background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 10px}
+ .tbl.snps td{display:block;padding:0;border:0;min-width:0}
+ .tbl.snps td.g{grid-area:g;font-size:16px}
+ .tbl.snps td.v{grid-area:v;color:var(--muted);font-size:13px;margin-top:-4px}
+ .tbl.snps td.res{grid-area:res;text-align:right}
+ .tbl.snps td.rs{grid-area:rs}.tbl.snps td.you{grid-area:you}.tbl.snps td.eff{grid-area:eff;text-align:right}
+ .tbl.snps td.rs,.tbl.snps td.you,.tbl.snps td.eff{background:var(--bg);border-radius:8px;padding:6px 8px}
+ .tbl.snps td .lbl{display:block;font:600 10.5px/1.3 -apple-system,"Segoe UI",Roboto,sans-serif;
+  text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:2px}
+ .tbl.snps td.eff .ev{display:none}
+ .tbl.snps td.desc{grid-area:desc;min-width:0;font-size:14px}
+ td.rs{white-space:normal}
+}
+@media (max-width:340px){.cards{grid-template-columns:1fr}
+ .tbl.snps tr{grid-template-areas:"g g res" "v v v" "rs you eff" "desc desc desc"}}
+@media print{body{background:#fff}.tbl{overflow:visible}h2{break-before:page}
+ nav.rnav,.no-print{display:none!important}}
+</style>
+<style>
+/* landing page only */
+.site-head{border-bottom:1px solid var(--line);background:var(--card)}
+.site-head .in{max-width:1180px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:10px;font-weight:700}
+.site-head svg{width:26px;height:26px;fill:var(--accent)}
+.hero{display:grid;grid-template-columns:1.1fr 1fr;gap:32px;align-items:center;padding:24px 0 8px}
+.hero h1{font-size:36px;line-height:1.15;margin:0 0 12px;letter-spacing:-.01em}
+.lead{font-size:17px;color:var(--muted);margin:0 0 16px}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--typ-bg);color:var(--typ);
+ font-weight:600;font-size:13px;padding:5px 12px;border-radius:99px}
+.drop{display:block;position:relative;cursor:pointer;background:var(--card);border:2px dashed var(--line);border-radius:14px;padding:28px 20px;text-align:center;
+ transition:border-color .15s,background .15s}
+.drop.over{border-color:var(--accent);background:var(--good-bg)}
+.drop h2{border:0;margin:0 0 6px;padding:0;font-size:19px}
+.btn{display:inline-block;background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;
+ padding:11px 18px;font:600 15px/1.2 inherit;font-family:inherit;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+.btn:focus-visible{outline:3px solid var(--good);outline-offset:2px}
+.drop input{position:absolute;width:1px;height:1px;opacity:0}
+.status{margin-top:12px;font-size:14px;min-height:21px}
+.status.err{color:var(--hom)}
+.formats{font-size:13px;color:var(--muted);margin-top:10px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.grid3.tight{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.grid3.tight .card{padding:12px 14px}
+.example{position:relative;padding-top:6px}
+.ex-tag{position:absolute;top:-30px;right:0;font-size:12px;font-weight:600;color:var(--muted);
+ background:var(--info-bg);padding:3px 10px;border-radius:99px}
+.feat h3{margin:0 0 4px;color:var(--ink);font-size:15.5px}
+.feat p{margin:0;font-size:14px;color:var(--muted)}
+.feat .n{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.04em}
+.priv{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.priv .card p{margin:4px 0 0;font-size:14px;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px}
+#report-wrap{display:none}
+#report-wrap.on{display:block}
+a{color:var(--accent)}
+footer{border-top:1px solid var(--line);margin-top:48px;padding-top:16px;font-size:13px;color:var(--muted)}
+.donate{margin-top:48px;display:flex;align-items:flex-start;gap:20px;padding:20px}
+.donate .avatar{width:96px;height:96px;border-radius:50%;object-fit:cover;flex:0 0 auto;border:3px solid var(--line)}
+.donate .about{min-width:0;display:flex;flex-direction:column;gap:8px}
+.donate h2{border:0;margin:0;padding:0;font-size:19px;display:flex;align-items:center;gap:8px}
+.donate .li{display:inline-flex;color:var(--muted)}.donate .li:hover{color:var(--accent)}
+.donate .li .ico{width:15px;height:15px}
+.donate p{margin:0;max-width:60ch}
+.donate .links{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.donate .links .btn{display:inline-flex;align-items:center;gap:8px}
+.donate .ico{width:18px;height:18px;flex:0 0 auto}
+@media (max-width:560px){.donate{flex-direction:column;align-items:center;text-align:center}
+ .donate .about{align-items:center}.donate h2{justify-content:center}.donate .links{justify-content:center}}
+.preview-note{display:none}
+.print-only{display:none}
+.pdf-link{margin:0 0 14px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+.credit{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;justify-content:space-between}
+.credit p{margin:0}
+@media (max-width:820px){.hero{grid-template-columns:1fr;gap:20px}.hero h1{font-size:28px}}
+@media (max-width:560px){.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+ .actions .btn{padding:9px 10px;font-size:13.5px;text-align:center}
+ .actions #dl-html{grid-column:1/-1}}
+@media print{.site-head,#landing,.donate{display:none!important}.print-only{display:block!important}}
+</style>
+
+</head>
+<body>
+<header class="site-head"><div class="in">
+ <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 6c-3 0-4 3-6 3S4 8 4 14s4 10 8 10c2 0 3-2 4-4 1 2 2 4 4 4 4 0 8-4 8-10s-4-5-6-5-3-3-6-3z"/></svg>
+ Thyroid SNP Check
+</div></header>
+
+<main>
+<div id="landing">
+ <section class="hero">
+  <div>
+   <span class="pill">&#128274; Runs on your device &middot; nothing is uploaded</span>
+   <h1 style="margin-top:14px">What does your DNA say about your thyroid?</h1>
+   <p class="lead">Load your raw data from 23andMe, AncestryDNA, MyHeritage or FamilyTreeDNA and get a plain-English thyroid report in seconds.</p>
+   <p class="small" style="margin:0">Made by a CTO, not a doctor. For information only, not medical advice.</p>
+  </div>
+  <div>
+   <label class="drop" id="drop" for="file">
+    <h2>Choose your raw data file</h2>
+    <p class="small" style="margin:0 0 14px">or drag it here (.txt, .csv, .zip or .gz)</p>
+    <span class="btn">Select file</span>
+    <input type="file" id="file" accept=".txt,.csv,.tsv,.zip,.gz,text/plain,text/csv,application/zip,application/gzip">
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+    <div class="formats">Your file never leaves this device. Find it under “Download raw data” in your DNA account.</div>
+   </label>
+  </div>
+ </section>
+
+ <h2>What you'll get</h2>
+ <div class="example" id="example"></div>
+
+ <h2>What it checks</h2>
+ <div class="grid3 tight" id="feat"></div>
+
+ <h2>Why this one</h2>
+ <div class="grid3 tight">
+  <div class="card feat"><h3>Thyroid first</h3><p>Conversion, TSH and Hashimoto's/Graves' genes that methylation tools like Genetic Genie skip.</p></div>
+  <div class="card feat"><h3>Plain English</h3><p>What each result means, how many copies you carry and how strong the evidence is.</p></div>
+  <div class="card feat"><h3>Private</h3><p>Analysed in your browser and never uploaded. The page is blocked from sending data anywhere.</p></div>
+  <div class="card feat"><h3>Free</h3><p>No account, no cost. The code is on <a id="repo-link" href="#" target="_blank" rel="noopener noreferrer">GitHub</a>.</p></div>
+ </div>
+</div>
+
+<div id="report-wrap">
+ <div class="actions no-print">
+  <button class="btn dl-only" id="dl-html">Download report (HTML)</button>
+  <button class="btn ghost dl-only" id="dl-print">Export as PDF</button>
+  <button class="btn ghost dl-only" id="dl-csv">SNP table (CSV)</button>
+  <button class="btn ghost dl-only" id="dl-region">All thyroid-gene SNPs (CSV)</button>
+  <button class="btn ghost" id="clear">Clear &amp; start over</button>
+ </div>
+ <div id="report"></div>
+</div>
+
+<section class="donate no-print card"><img class="avatar" src="data:image/jpeg;base64,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" alt="The creator of Thyroid SNP Check" width="96" height="96"><div class="about"><h2>Support me <a class="li" href="https://www.linkedin.com/in/aimannrasheed" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile" title="LinkedIn"><svg class="ico" aria-hidden="true" focusable="false" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a></h2><p>Hi! I&#x27;m Aimann, a CTO and tech strategist, not a doctor. I built this to understand my own thyroid genetics. It&#x27;s free and always will be.</p><p>If it helped, you can buy me a coffee. Want something built? Tap Work with me.</p><div class="links"><a class="btn" href="https://forms.gle/DjWki5bxN3eQT5JSA" target="_blank" rel="noopener noreferrer"><svg class="ico" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" > <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /> </svg>Work with me</a><a class="btn ghost" href="https://account.venmo.com/u/Aimann-Rasheed" target="_blank" rel="noopener noreferrer"><svg class="ico" aria-hidden="true" focusable="false" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="5" fill="#008CFF"/><path d="M7 6.5l4.6 11h1.3c2-3.3 3.9-7.2 4.1-9.7.1-.6-.1-1.1-.4-1.4l-2.6.6c.5 1.5-.6 4.6-1.6 6.5L10 6.2z" fill="#fff"/></svg>Venmo</a><a class="btn ghost" href="https://cash.app/$AimannRasheed" target="_blank" rel="noopener noreferrer"><svg class="ico" aria-hidden="true" focusable="false" fill="#00C244" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M23.59 3.475a5.1 5.1 0 00-3.05-3.05c-1.31-.42-2.5-.42-4.92-.42H8.36c-2.4 0-3.61 0-4.9.4a5.1 5.1 0 00-3.05 3.06C0 4.765 0 5.965 0 8.365v7.27c0 2.41 0 3.6.4 4.9a5.1 5.1 0 003.05 3.05c1.3.41 2.5.41 4.9.41h7.28c2.41 0 3.61 0 4.9-.4a5.1 5.1 0 003.06-3.06c.41-1.3.41-2.5.41-4.9v-7.25c0-2.41 0-3.61-.41-4.91zm-6.17 4.63l-.93.93a.5.5 0 01-.67.01 5 5 0 00-3.22-1.18c-.97 0-1.94.32-1.94 1.21 0 .9 1.04 1.2 2.24 1.65 2.1.7 3.84 1.58 3.84 3.64 0 2.24-1.74 3.78-4.58 3.95l-.26 1.2a.49.49 0 01-.48.39H9.63l-.09-.01a.5.5 0 01-.38-.59l.28-1.27a6.54 6.54 0 01-2.88-1.57v-.01a.48.48 0 010-.68l1-.97a.49.49 0 01.67 0c.91.86 2.13 1.34 3.39 1.32 1.3 0 2.17-.55 2.17-1.42 0-.87-.88-1.1-2.54-1.72-1.76-.63-3.43-1.52-3.43-3.6 0-2.42 2.01-3.6 4.39-3.71l.25-1.23a.48.48 0 01.48-.38h1.78l.1.01c.26.06.43.31.37.57l-.27 1.37c.9.3 1.75.77 2.48 1.39l.02.02c.19.2.19.5 0 .68z"/></svg>Cash App</a><a class="btn ghost" href="https://paypal.me/rasheemo1" target="_blank" rel="noopener noreferrer"><svg class="ico" aria-hidden="true" focusable="false" fill="#009CDE" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.016 19.198h-4.2a.562.562 0 0 1-.555-.65L5.093.584A.692.692 0 0 1 5.776 0h7.222c3.417 0 5.904 2.488 5.846 5.5-.006.25-.027.5-.066.747A6.794 6.794 0 0 1 12.071 12H8.743a.69.69 0 0 0-.682.583l-.325 2.056-.013.083-.692 4.39-.015.087zM19.79 6.142c-.01.087-.01.175-.023.261a7.76 7.76 0 0 1-7.695 6.598H9.007l-.283 1.795-.013.083-.692 4.39-.134.843-.014.088H6.86l-.497 3.15a.562.562 0 0 0 .555.65h3.612c.34 0 .63-.249.683-.585l.952-6.031a.692.692 0 0 1 .683-.584h2.126a6.793 6.793 0 0 0 6.707-5.752c.306-1.95-.466-3.744-1.89-4.906z"/></svg>PayPal</a><a class="btn ghost" href="https://substack.com/@almoony" target="_blank" rel="noopener noreferrer"><svg class="ico" aria-hidden="true" focusable="false" fill="#FF6719" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg>Substack</a></div></div></section>
+<footer>
+ <b>Thyroid SNP Check</b> · free for non-commercial use (PolyForm Noncommercial) ·
+ <a id="repo-link2" href="#" target="_blank" rel="noopener noreferrer">code on GitHub</a><br>
+ For education only, not medical advice. Your lab results matter more than any of these SNPs.
+</footer>
+</main>
+
+<script type="application/json" id="snp-data">{"categories":[{"key":"thy_conv","title":"T4 → T3 conversion (deiodinases)","group":"Thyroid"},{"key":"thy_tsh","title":"TSH set-point & thyroid function","group":"Thyroid"},{"key":"thy_auto","title":"Thyroid autoimmunity (Hashimoto's / Graves')","group":"Thyroid"},{"key":"thy_cancer","title":"Thyroid nodule / cancer susceptibility","group":"Thyroid"},{"key":"thy_cof","title":"Thyroid cofactors (selenium, iron, vitamin A, D, B12)","group":"Thyroid"},{"key":"methyl","title":"Methylation & folate cycle","group":"Common"},{"key":"cardio","title":"Cardiovascular, lipids & clotting","group":"Common"},{"key":"metab","title":"Metabolic, weight & liver","group":"Common"},{"key":"pgx","title":"Drug response (pharmacogenomics)","group":"Common"},{"key":"detox","title":"Detox & oxidative stress","group":"Common"},{"key":"nutri","title":"Nutrition, neuro & traits","group":"Common"},{"key":"carrier","title":"Other health / carrier variants","group":"Common"}],"snps":[{"rsid":"rs225014","gene":"DIO2","variant":"Thr92Ala","cat":"thy_conv","alleles":"CT","effect":"C","kind":"risk","evidence":"moderate","desc":"Ala92 allele. Linked to modestly reduced type-2 deiodinase activity (local T4→T3 conversion in brain, muscle, pituitary). In levothyroxine-treated patients, Ala/Ala has been associated with lower well-being and a better response to T4+T3 combination therapy in some studies; results are mixed and current guidelines do not yet use it to choose therapy.","notes":{"2":"Ala/Ala — the genotype most often discussed for possible benefit from T4+T3 combination therapy.","1":"Thr/Ala — one copy; intermediate, generally small effect.","0":"Thr/Thr — common, typical D2 activity."}},{"rsid":"rs12885300","gene":"DIO2","variant":"ORFa-Gly3Asp","cat":"thy_conv","alleles":"CT","effect":"T","kind":"info","evidence":"limited","desc":"Asp3 allele of an upstream open reading frame in DIO2. Associated with slightly lower T4, FT4 and rT3 (suggesting somewhat higher D2 activity; Peeters 2005); effects are small and not consistently replicated.","notes":{}},{"rsid":"rs2235544","gene":"DIO1","variant":"rs2235544 A>C","cat":"thy_conv","alleles":"AC","effect":"C","kind":"benefit","evidence":"moderate","desc":"C allele associated with higher type-1 deiodinase activity: higher FT3/FT4 ratio, lower FT4 and lower reverse T3 (Panicker 2008). The A allele is linked to relatively less T4→T3 conversion by D1.","notes":{"0":"A/A — relatively lower D1 conversion (higher FT4, lower FT3/FT4 ratio on average).","1":"A/C — intermediate.","2":"C/C — highest average D1 activity (higher FT3/FT4 ratio)."}},{"rsid":"rs11206244","gene":"DIO1","variant":"D1-C785T","cat":"thy_conv","alleles":"CT","effect":"T","kind":"risk","evidence":"moderate","desc":"T allele associated with higher reverse T3 and a lower T3/rT3 and FT3/FT4 ratio, i.e. slightly less efficient D1 conversion (Peeters 2003; Panicker 2008).","notes":{}},{"rsid":"rs12095080","gene":"DIO1","variant":"D1a-A/G","cat":"thy_conv","alleles":"AG","effect":"G","kind":"benefit","evidence":"moderate","desc":"G allele associated with a higher T3/rT3 ratio (more active D1) (Peeters 2003).","notes":{"0":"A/A — common genotype; typical D1 activity.","1":"A/G — one copy of the higher-T3/rT3 allele.","2":"G/G — two copies of the higher-T3/rT3 allele."}},{"rsid":"rs4704397","gene":"PDE8B","variant":"rs4704397","cat":"thy_tsh","alleles":"AG","effect":"A","kind":"info","evidence":"strong","desc":"A allele associated with higher serum TSH (≈ +0.1 mU/L per copy; Arnaud-Lopez 2008). Affects the TSH reference point, not thyroid disease per se — a mildly higher TSH can be genetic.","notes":{}},{"rsid":"rs6885099","gene":"PDE8B","variant":"rs6885099","cat":"thy_tsh","alleles":"AG","effect":"G","kind":"info","evidence":"strong","desc":"G allele associated with higher serum TSH (A lowers it; Porcu 2013) and modestly with hypothyroidism.","notes":{}},{"rsid":"rs7850258","gene":"FOXE1","variant":"rs7850258","cat":"thy_tsh","alleles":"AG","effect":"G","kind":"risk","evidence":"moderate","desc":"G allele associated with higher risk of primary hypothyroidism (Denny 2011 PheWAS; Eriksson 2012 23andMe GWAS). The minor A allele is protective (OR ≈ 0.75).","notes":{}},{"rsid":"rs1991517","gene":"TSHR","variant":"Asp727Glu","cat":"thy_tsh","alleles":"CG","effect":"G","kind":"info","evidence":"limited","desc":"Glu727 allele; associated with slightly lower TSH in some cohorts. Effect is small.","notes":{}},{"rsid":"rs4915077","gene":"VAV3","variant":"rs4915077","cat":"thy_tsh","alleles":"CT","effect":"C","kind":"risk","evidence":"moderate","desc":"Minor C allele (~7% in Europeans) associated with hypothyroidism (OR ≈ 1.3; Eriksson 2012 23andMe GWAS).","notes":{}},{"rsid":"rs2476601","gene":"PTPN22","variant":"R620W (1858C>T)","cat":"thy_auto","alleles":"AG","effect":"A","kind":"risk","evidence":"strong","desc":"620W allele; one of the best-replicated autoimmunity variants (Hashimoto's, Graves', type 1 diabetes, rheumatoid arthritis). OR ≈ 1.5–2 per copy for autoimmune thyroid disease.","notes":{}},{"rsid":"rs6679677","gene":"PTPN22 region","variant":"rs6679677","cat":"thy_auto","alleles":"AC","effect":"A","kind":"risk","evidence":"strong","desc":"Proxy for PTPN22 R620W; A allele associated with hypothyroidism in the 23andMe GWAS.","notes":{}},{"rsid":"rs3087243","gene":"CTLA4","variant":"CT60","cat":"thy_auto","alleles":"AG","effect":"G","kind":"risk","evidence":"moderate","desc":"G allele associated with Graves' disease, Hashimoto's and thyroid antibodies (Ueda 2003). G is the more common allele in most populations, so G/G is frequent.","notes":{}},{"rsid":"rs231775","gene":"CTLA4","variant":"+49A/G (Thr17Ala)","cat":"thy_auto","alleles":"AG","effect":"G","kind":"risk","evidence":"moderate","desc":"Ala17 (G) allele associated with Graves' disease and autoimmune hypothyroidism (OR ≈ 1.3–1.5).","notes":{}},{"rsid":"rs3184504","gene":"SH2B3","variant":"R262W","cat":"thy_auto","alleles":"CT","effect":"T","kind":"risk","evidence":"strong","desc":"T allele associated with hypothyroidism, TPO antibodies, celiac disease and type 1 diabetes.","notes":{}},{"rsid":"rs7574865","gene":"STAT4","variant":"rs7574865","cat":"thy_auto","alleles":"GT","effect":"T","kind":"risk","evidence":"moderate","desc":"T allele associated with several autoimmune diseases (lupus, RA) and with autoimmune thyroid disease.","notes":{}},{"rsid":"rs7528684","gene":"FCRL3","variant":"-169T>C","cat":"thy_auto","alleles":"AG","effect":"G","kind":"risk","evidence":"moderate","desc":"Risk allele associated with Graves' disease and RA in Japanese and some European cohorts.","notes":{}},{"rsid":"rs2187668","gene":"HLA-DQA1","variant":"DQ2.5 tag","cat":"thy_auto","alleles":"CT","effect":"T","kind":"risk","evidence":"strong","desc":"T allele tags HLA-DQ2.5, the main genetic risk factor for celiac disease. Celiac and Hashimoto's frequently co-occur.","notes":{}},{"rsid":"rs7454108","gene":"HLA-DQB1","variant":"DQ8 tag","cat":"thy_auto","alleles":"CT","effect":"C","kind":"risk","evidence":"strong","desc":"C allele tags HLA-DQ8, the second celiac-risk haplotype; also linked to type 1 diabetes and autoimmune thyroid disease. Carrying DQ8 is common (~10–20%) and most carriers never develop celiac.","notes":{}},{"rsid":"rs179247","gene":"TSHR","variant":"intron 1","cat":"thy_auto","alleles":"AG","effect":"A","kind":"risk","evidence":"strong","desc":"A allele associated with Graves' disease (TSHR intron-1 locus; Dechairo 2005).","notes":{}},{"rsid":"rs12101255","gene":"TSHR","variant":"intron 1","cat":"thy_auto","alleles":"CT","effect":"T","kind":"risk","evidence":"strong","desc":"T allele associated with Graves' disease (Brand 2009).","notes":{}},{"rsid":"rs2268458","gene":"TSHR","variant":"intron 1","cat":"thy_auto","alleles":"CT","effect":"C","kind":"risk","evidence":"limited","desc":"C allele associated with Graves' disease at the TSHR intron-1 locus (single small study; Yin 2008).","notes":{}},{"rsid":"rs965513","gene":"FOXE1/PTCSC2","variant":"rs965513","cat":"thy_cancer","alleles":"AG","effect":"A","kind":"risk","evidence":"strong","desc":"A allele associated with papillary thyroid cancer (OR ≈ 1.7 per copy; Gudmundsson 2009) and with lower TSH / T4. Absolute risk remains low.","notes":{}},{"rsid":"rs1867277","gene":"FOXE1","variant":"promoter -283G>A","cat":"thy_cancer","alleles":"AG","effect":"A","kind":"risk","evidence":"moderate","desc":"A allele associated with papillary thyroid cancer (Landa 2009).","notes":{}},{"rsid":"rs944289","gene":"PTCSC3 / NKX2-1","variant":"rs944289","cat":"thy_cancer","alleles":"CT","effect":"T","kind":"risk","evidence":"strong","desc":"T allele associated with papillary thyroid cancer (OR ≈ 1.4; Gudmundsson 2009).","notes":{}},{"rsid":"rs966423","gene":"DIRC3","variant":"rs966423","cat":"thy_cancer","alleles":"CT","effect":"C","kind":"risk","evidence":"moderate","desc":"C allele associated with differentiated thyroid cancer and with TSH levels (Gudmundsson 2012).","notes":{}},{"rsid":"rs1050450","gene":"GPX1","variant":"Pro198Leu","cat":"thy_cof","alleles":"AG","effect":"A","kind":"risk","evidence":"moderate","desc":"Leu198 allele; lower glutathione peroxidase-1 activity (a selenium-dependent enzyme). The thyroid relies on selenoproteins to handle the H2O2 it uses to make hormone.","notes":{}},{"rsid":"rs3877899","gene":"SELENOP","variant":"Ala234Thr","cat":"thy_cof","alleles":"CT","effect":"T","kind":"info","evidence":"limited","desc":"Selenoprotein P variant; alters plasma selenium / selenoprotein P levels and response to selenium supplementation.","notes":{}},{"rsid":"rs7579","gene":"SELENOP","variant":"3'UTR 25191G>A","cat":"thy_cof","alleles":"CT","effect":"T","kind":"info","evidence":"limited","desc":"Selenoprotein P 3'UTR variant; associated with differences in selenoprotein P levels and response to selenium supplementation.","notes":{}},{"rsid":"rs855791","gene":"TMPRSS6","variant":"Ala736Val","cat":"thy_cof","alleles":"AG","effect":"A","kind":"risk","evidence":"strong","desc":"Val736 allele associated with lower serum iron, transferrin saturation and haemoglobin. Iron is required by thyroid peroxidase; low ferritin is common in hypothyroidism.","notes":{}},{"rsid":"rs1800562","gene":"HFE","variant":"C282Y","cat":"thy_cof","alleles":"AG","effect":"A","kind":"risk","evidence":"strong","desc":"Main hereditary haemochromatosis (iron overload) variant. Two copies = high risk of iron overload (check ferritin / transferrin saturation); one copy = carrier.","notes":{}},{"rsid":"rs1799945","gene":"HFE","variant":"H63D","cat":"thy_cof","alleles":"CG","effect":"G","kind":"risk","evidence":"moderate","desc":"Milder haemochromatosis variant; matters mainly together with C282Y.","notes":{}},{"rsid":"rs12934922","gene":"BCO1 (BCMO1)","variant":"R267S","cat":"thy_cof","alleles":"AT","effect":"T","kind":"risk","evidence":"moderate","desc":"Reduced conversion of beta-carotene to vitamin A (Leung 2009). Vitamin A influences TSH and thyroid-hormone receptor signalling.","notes":{}},{"rsid":"rs7501331","gene":"BCO1 (BCMO1)","variant":"A379V","cat":"thy_cof","alleles":"CT","effect":"T","kind":"risk","evidence":"moderate","desc":"Reduced beta-carotene → vitamin A conversion; combined with R267S can lower conversion ~50–70%.","notes":{}},{"rsid":"rs2282679","gene":"GC (vitamin D binding protein)","variant":"rs2282679","cat":"thy_cof","alleles":"GT","effect":"G","kind":"risk","evidence":"strong","desc":"Allele associated with lower circulating 25-OH vitamin D (Wang 2010). Low vitamin D is associated with thyroid autoimmunity.","notes":{}},{"rsid":"rs1544410","gene":"VDR","variant":"BsmI","cat":"thy_cof","alleles":"CT","effect":"T","kind":"info","evidence":"limited","desc":"T = 'B' allele (in strong LD with TaqI 't'). Associations with bone density and autoimmunity are weak/inconsistent.","notes":{}},{"rsid":"rs731236","gene":"VDR","variant":"TaqI","cat":"thy_cof","alleles":"AG","effect":"G","kind":"info","evidence":"limited","desc":"G = 't' allele. Associations with vitamin-D response and autoimmune thyroid disease are weak/inconsistent.","notes":{}},{"rsid":"rs601338","gene":"FUT2","variant":"W143X (non-secretor)","cat":"thy_cof","alleles":"AG","effect":"A","kind":"info","evidence":"strong","desc":"A/A = 'non-secretor': higher serum B12, altered gut microbiome, resistance to norovirus.","notes":{}},{"rsid":"rs1801198","gene":"TCN2","variant":"C776G (Pro259Arg)","cat":"thy_cof","alleles":"CG","effect":"G","kind":"risk","evidence":"moderate","desc":"776G (Arg259) allele associated with lower holotranscobalamin (active B12 delivered to cells). B12 deficiency is common in autoimmune hypothyroidism. (One large proteomics study reported the opposite direction, likely an assay artefact.)","notes":{}},{"rsid":"rs1801133","gene":"MTHFR","variant":"C677T (Ala222Val)","cat":"methyl","alleles":"AG","effect":"A","kind":"risk","evidence":"strong","desc":"677T allele. T/T reduces MTHFR activity to ~30% and can raise homocysteine, especially with low folate/riboflavin; C/T ~65% activity.","notes":{}},{"rsid":"rs1801131","gene":"MTHFR","variant":"A1298C (Glu429Ala)","cat":"methyl","alleles":"GT","effect":"G","kind":"risk","evidence":"moderate","desc":"1298C allele. Milder than C677T: C/C reduces activity modestly and usually does not raise homocysteine on its own.","notes":{}},{"rsid":"rs1805087","gene":"MTR","variant":"A2756G (D919G)","cat":"methyl","alleles":"AG","effect":"G","kind":"info","evidence":"limited","desc":"2756G allele of methionine synthase (B12-dependent). Effects on homocysteine are small.","notes":{}},{"rsid":"rs1801394","gene":"MTRR","variant":"A66G (I22M)","cat":"methyl","alleles":"AG","effect":"G","kind":"risk","evidence":"limited","desc":"66G allele; slightly reduced methionine synthase reductase efficiency (B12 recycling).","notes":{}},{"rsid":"rs2236225","gene":"MTHFD1","variant":"G1958A (R653Q)","cat":"methyl","alleles":"AG","effect":"A","kind":"risk","evidence":"limited","desc":"653Q allele; associated with greater choline/folate demand and neural-tube-defect risk in some studies.","notes":{}},{"rsid":"rs234706","gene":"CBS","variant":"C699T (Y233Y)","cat":"methyl","alleles":"AG","effect":"A","kind":"info","evidence":"limited","desc":"699T allele. Popularly called 'CBS upregulation', but the evidence is weak; associated with slightly lower homocysteine.","notes":{}},{"rsid":"rs1979277","gene":"SHMT1","variant":"C1420T (L474F)","cat":"methyl","alleles":"AG","effect":"A","kind":"info","evidence":"limited","desc":"1420T allele; small effects on folate partitioning.","notes":{}},{"rsid":"rs3733890","gene":"BHMT","variant":"G742A (R239Q)","cat":"methyl","alleles":"AG","effect":"A","kind":"info","evidence":"limited","desc":"239Q allele of betaine-homocysteine methyltransferase (alternate, choline/betaine-based homocysteine pathway).","notes":{}},{"rsid":"rs7946","gene":"PEMT","variant":"V175M","cat":"methyl","alleles":"CT","effect":"T","kind":"risk","evidence":"limited","desc":"Variant associated with reduced PEMT activity and higher dietary choline requirement.","notes":{}},{"rsid":"rs4680","gene":"COMT","variant":"Val158Met","cat":"methyl","alleles":"AG","effect":"A","kind":"info","evidence":"strong","desc":"Met158 allele ≈ 3–4× lower COMT activity (slower breakdown of dopamine, adrenaline, catechol-estrogens).","notes":{"0":"Val/Val — 'fast' COMT: quicker dopamine/catecholamine clearance; often more stress-resilient, sometimes lower baseline prefrontal dopamine.","1":"Val/Met — intermediate COMT activity.","2":"Met/Met — 'slow' COMT: higher prefrontal dopamine, slower estrogen/catecholamine clearance."}},{"rsid":"rs6323","gene":"MAOA","variant":"R297R (T941G)","cat":"methyl","alleles":"GT","effect":"T","kind":"info","evidence":"limited","desc":"Synonymous MAOA variant on the X chromosome (men have one copy). T is usually reported as the lower-MAOA-activity allele and G as higher, but the literature is inconsistent; clinical meaning is uncertain.","notes":{}},{"rsid":"rs6025","gene":"F5","variant":"Factor V Leiden (R506Q)","cat":"cardio","alleles":"CT","effect":"T","kind":"risk","evidence":"strong","desc":"Factor V Leiden. One copy ≈ 3–8× venous clot risk; two copies much higher.","notes":{}},{"rsid":"i3002432","gene":"F2","variant":"Prothrombin G20210A","cat":"cardio","alleles":"AG","effect":"A","kind":"risk","evidence":"strong","desc":"Prothrombin G20210A (23andMe internal ID). One copy ≈ 2–3× venous clot risk.","notes":{}},{"rsid":"rs10757274","gene":"CDKN2B-AS1 (9p21)","variant":"9p21 CAD locus","cat":"cardio","alleles":"AG","effect":"G","kind":"risk","evidence":"strong","desc":"G allele associated with coronary artery disease (~1.2–1.3× per copy).","notes":{}},{"rsid":"rs1333049","gene":"CDKN2B-AS1 (9p21)","variant":"9p21 CAD locus","cat":"cardio","alleles":"CG","effect":"C","kind":"risk","evidence":"strong","desc":"C allele associated with coronary artery disease (~1.2–1.3× per copy).","notes":{}},{"rsid":"rs10455872","gene":"LPA","variant":"Lp(a) variant","cat":"cardio","alleles":"AG","effect":"G","kind":"risk","evidence":"strong","desc":"G allele strongly raises lipoprotein(a); ~1.5× coronary risk per copy.","notes":{}},{"rsid":"rs3798220","gene":"LPA","variant":"I4399M","cat":"cardio","alleles":"CT","effect":"C","kind":"risk","evidence":"strong","desc":"C allele raises lipoprotein(a) and coronary risk.","notes":{}},{"rsid":"rs5742904","gene":"APOB","variant":"R3527Q (familial defective ApoB)","cat":"cardio","alleles":"CT","effect":"T","kind":"risk","evidence":"strong","desc":"Causes familial defective ApoB-100 (high LDL).","notes":{}},{"rsid":"rs11591147","gene":"PCSK9","variant":"R46L","cat":"cardio","alleles":"GT","effect":"T","kind":"benefit","evidence":"strong","desc":"Loss-of-function allele: lifelong lower LDL cholesterol and ~45% lower coronary risk.","notes":{}},{"rsid":"rs4343","gene":"ACE","variant":"I/D proxy (2350G>A)","cat":"cardio","alleles":"AG","effect":"G","kind":"info","evidence":"limited","desc":"G tags the ACE 'D' allele (higher ACE levels). Associations with blood pressure/athletic power are modest.","notes":{}},{"rsid":"rs7903146","gene":"TCF7L2","variant":"rs7903146","cat":"metab","alleles":"CT","effect":"T","kind":"risk","evidence":"strong","desc":"Strongest common type 2 diabetes variant (~1.4× per copy).","notes":{}},{"rsid":"rs10811661","gene":"CDKN2A/B","variant":"rs10811661","cat":"metab","alleles":"CT","effect":"T","kind":"risk","evidence":"strong","desc":"T allele associated with type 2 diabetes (~1.2×).","notes":{}},{"rsid":"rs13266634","gene":"SLC30A8","variant":"R325W","cat":"metab","alleles":"CT","effect":"C","kind":"risk","evidence":"strong","desc":"C allele (Arg325) associated with type 2 diabetes (~1.1–1.2×).","notes":{}},{"rsid":"rs10830963","gene":"MTNR1B","variant":"rs10830963","cat":"metab","alleles":"CG","effect":"G","kind":"risk","evidence":"strong","desc":"G allele associated with higher fasting glucose and T2D risk; late-night eating may matter more for carriers.","notes":{}},{"rsid":"rs1801282","gene":"PPARG","variant":"Pro12Ala","cat":"metab","alleles":"CG","effect":"G","kind":"benefit","evidence":"strong","desc":"Ala12 allele associated with modestly lower type 2 diabetes risk and better insulin sensitivity.","notes":{}},{"rsid":"rs9939609","gene":"FTO","variant":"rs9939609","cat":"metab","alleles":"AT","effect":"A","kind":"risk","evidence":"strong","desc":"A allele: ~+0.4 kg/m² BMI per copy on average and higher appetite; effect is blunted by physical activity.","notes":{}},{"rsid":"rs17782313","gene":"MC4R","variant":"rs17782313","cat":"metab","alleles":"CT","effect":"C","kind":"risk","evidence":"strong","desc":"C allele associated with higher BMI and appetite.","notes":{}},{"rsid":"rs738409","gene":"PNPLA3","variant":"I148M","cat":"metab","alleles":"CG","effect":"G","kind":"risk","evidence":"strong","desc":"148M allele; the strongest genetic risk factor for fatty liver disease (NAFLD/MASLD) and higher ALT. Risk is amplified by excess weight, alcohol and high sugar/fructose intake.","notes":{"2":"M/M — roughly 2–3× higher risk of fatty liver and fibrosis; worth knowing for liver-enzyme monitoring.","1":"I/M — one copy; moderately increased fatty-liver susceptibility.","0":"I/I — typical risk."}},{"rsid":"rs4244285","gene":"CYP2C19","variant":"*2","cat":"pgx","alleles":"AG","effect":"A","kind":"risk","evidence":"strong","desc":"Loss-of-function. Reduces activation of clopidogrel (Plavix); alters dosing of many SSRIs and PPIs.","notes":{}},{"rsid":"rs4986893","gene":"CYP2C19","variant":"*3","cat":"pgx","alleles":"AG","effect":"A","kind":"risk","evidence":"strong","desc":"Loss-of-function (mainly East Asian).","notes":{}},{"rsid":"rs12248560","gene":"CYP2C19","variant":"*17","cat":"pgx","alleles":"CT","effect":"T","kind":"info","evidence":"strong","desc":"Increased-function allele: faster metabolism of PPIs, some SSRIs (e.g. escitalopram, sertraline).","notes":{}},{"rsid":"rs1799853","gene":"CYP2C9","variant":"*2","cat":"pgx","alleles":"CT","effect":"T","kind":"risk","evidence":"strong","desc":"Reduced function: lower warfarin and NSAID clearance.","notes":{}},{"rsid":"rs1057910","gene":"CYP2C9","variant":"*3","cat":"pgx","alleles":"AC","effect":"C","kind":"risk","evidence":"strong","desc":"Strongly reduced function: lower warfarin dose needed; slower NSAID / phenytoin clearance.","notes":{}},{"rsid":"rs9923231","gene":"VKORC1","variant":"-1639G>A","cat":"pgx","alleles":"CT","effect":"T","kind":"risk","evidence":"strong","desc":"Increased warfarin sensitivity (lower dose needed).","notes":{}},{"rsid":"rs4149056","gene":"SLCO1B1","variant":"*5 (V174A)","cat":"pgx","alleles":"CT","effect":"C","kind":"risk","evidence":"strong","desc":"Higher simvastatin blood levels and statin-myopathy risk (C/C ≈ 17×).","notes":{}},{"rsid":"rs3892097","gene":"CYP2D6","variant":"*4","cat":"pgx","alleles":"CT","effect":"T","kind":"risk","evidence":"strong","desc":"Most common CYP2D6 non-functional allele (codeine, tramadol, tamoxifen, many antidepressants). Note: CYP2D6 copy-number changes cannot be seen on this chip.","notes":{}},{"rsid":"rs3918290","gene":"DPYD","variant":"*2A","cat":"pgx","alleles":"CT","effect":"T","kind":"risk","evidence":"strong","desc":"Severe 5-FU / capecitabine toxicity risk.","notes":{}},{"rsid":"rs1142345","gene":"TPMT","variant":"*3C (A719G)","cat":"pgx","alleles":"CT","effect":"C","kind":"risk","evidence":"strong","desc":"Reduced TPMT activity: azathioprine / 6-MP toxicity risk.","notes":{}},{"rsid":"rs1800460","gene":"TPMT","variant":"*3B (G460A)","cat":"pgx","alleles":"CT","effect":"T","kind":"risk","evidence":"strong","desc":"Reduced TPMT activity: azathioprine / 6-MP toxicity risk.","notes":{}},{"rsid":"rs776746","gene":"CYP3A5","variant":"*3","cat":"pgx","alleles":"CT","effect":"C","kind":"info","evidence":"strong","desc":"*3 = non-expresser. *3/*3 is the most common genotype in Europeans; relevant to tacrolimus dosing.","notes":{}},{"rsid":"rs762551","gene":"CYP1A2","variant":"*1F (-163C>A)","cat":"pgx","alleles":"AC","effect":"C","kind":"risk","evidence":"moderate","desc":"C allele = slower inducible CYP1A2 (caffeine) metabolism. In slow metabolizers, heavy coffee intake has been linked to higher blood pressure / heart-attack risk.","notes":{"0":"A/A — fast caffeine metabolizer.","1":"A/C — slow(er) caffeine metabolizer.","2":"C/C — slow caffeine metabolizer."}},{"rsid":"rs1800497","gene":"ANKK1/DRD2","variant":"Taq1A","cat":"pgx","alleles":"AG","effect":"A","kind":"info","evidence":"moderate","desc":"A1 allele associated with lower striatal D2 receptor density; reward/addiction-related research associations.","notes":{}},{"rsid":"rs1799971","gene":"OPRM1","variant":"A118G (N40D)","cat":"pgx","alleles":"AG","effect":"G","kind":"info","evidence":"moderate","desc":"Asp40 allele; associated with higher opioid dose requirements and altered response to naltrexone.","notes":{}},{"rsid":"rs1695","gene":"GSTP1","variant":"Ile105Val","cat":"detox","alleles":"AG","effect":"G","kind":"info","evidence":"limited","desc":"Val105 allele alters glutathione S-transferase P1 substrate activity.","notes":{}},{"rsid":"rs4880","gene":"SOD2","variant":"Val16Ala","cat":"detox","alleles":"AG","effect":"G","kind":"info","evidence":"limited","desc":"Ala16 allele: more efficient import of MnSOD into mitochondria. Associations with disease are mixed.","notes":{}},{"rsid":"rs1800566","gene":"NQO1","variant":"P187S","cat":"detox","alleles":"AG","effect":"A","kind":"risk","evidence":"moderate","desc":"Ser187 allele; T/T (here A/A) has almost no NQO1 activity (quinone / benzene detox, CoQ10 reduction).","notes":{}},{"rsid":"rs1800629","gene":"TNF","variant":"-308G>A","cat":"detox","alleles":"AG","effect":"A","kind":"risk","evidence":"limited","desc":"A allele associated with higher TNF-α production (inflammation).","notes":{}},{"rsid":"rs4988235","gene":"MCM6/LCT","variant":"-13910C>T","cat":"nutri","alleles":"AG","effect":"A","kind":"info","evidence":"strong","desc":"A allele (= T on the gene strand) gives lactase persistence (digesting lactose as an adult).","notes":{"0":"G/G — likely lactase non-persistent (lactose intolerance tendency in adulthood; note other persistence variants exist in African / Middle-Eastern populations).","1":"A/G — lactase persistent.","2":"A/A — lactase persistent."}},{"rsid":"rs671","gene":"ALDH2","variant":"*2 (E504K)","cat":"nutri","alleles":"AG","effect":"A","kind":"risk","evidence":"strong","desc":"Alcohol flush; carriers who drink have much higher oesophageal-cancer risk.","notes":{}},{"rsid":"rs1815739","gene":"ACTN3","variant":"R577X","cat":"nutri","alleles":"CT","effect":"T","kind":"info","evidence":"moderate","desc":"X allele (stop codon). X/X lacks alpha-actinin-3 in fast-twitch muscle (less sprint/power, possibly more endurance-oriented).","notes":{}},{"rsid":"rs174537","gene":"FADS1","variant":"rs174537","cat":"nutri","alleles":"GT","effect":"T","kind":"risk","evidence":"strong","desc":"T allele associated with lower conversion of plant omega-3/6 into EPA/DHA and arachidonic acid.","notes":{}},{"rsid":"rs6265","gene":"BDNF","variant":"Val66Met","cat":"nutri","alleles":"CT","effect":"T","kind":"info","evidence":"moderate","desc":"Met66 allele: reduced activity-dependent BDNF secretion; memory and mood research associations.","notes":{}},{"rsid":"rs12913832","gene":"HERC2/OCA2","variant":"eye colour","cat":"nutri","alleles":"AG","effect":"G","kind":"info","evidence":"strong","desc":"G/G strongly predicts blue eyes; A/A brown; A/G usually brown/hazel.","notes":{}},{"rsid":"rs17822931","gene":"ABCC11","variant":"G538A","cat":"nutri","alleles":"CT","effect":"T","kind":"info","evidence":"strong","desc":"T/T = dry earwax and low underarm odour (common in East Asians).","notes":{}},{"rsid":"rs16969968","gene":"CHRNA5","variant":"D398N","cat":"nutri","alleles":"AG","effect":"A","kind":"risk","evidence":"strong","desc":"A allele associated with heavier smoking and nicotine dependence.","notes":{}},{"rsid":"rs429358","gene":"APOE","variant":"C130R (ε4 defining SNP)","cat":"carrier","alleles":"CT","effect":"C","kind":"risk","evidence":"strong","desc":"See the APOE result in the summary — APOE type is determined from rs429358 + rs7412 together.","notes":{"1":"One ε4-defining allele (see APOE type in the summary).","2":"Two ε4-defining alleles (see APOE type in the summary)."}},{"rsid":"rs7412","gene":"APOE","variant":"R176C (ε2 defining SNP)","cat":"carrier","alleles":"CT","effect":"T","kind":"info","evidence":"strong","desc":"See the APOE result in the summary.","notes":{}},{"rsid":"rs28929474","gene":"SERPINA1","variant":"PiZ (E342K)","cat":"carrier","alleles":"CT","effect":"T","kind":"risk","evidence":"strong","desc":"Alpha-1 antitrypsin Z allele. Z/Z causes AAT deficiency (lung and liver disease).","notes":{}},{"rsid":"rs17580","gene":"SERPINA1","variant":"PiS (E264V)","cat":"carrier","alleles":"AT","effect":"A","kind":"risk","evidence":"strong","desc":"Alpha-1 antitrypsin S allele (mild); significant mainly as S/Z.","notes":{}}],"apoe":{"TT|TT":"ε2/ε2","TT|CT":"ε2/ε3","CT|CT":"ε2/ε4 (or ε1/ε3 — rare)","TT|CC":"ε3/ε3","CT|CC":"ε3/ε4","CC|CC":"ε4/ε4","CC|CT":"ε4/ε4 with ε1 (rare)"},"apoeNotes":{"ε2/ε2":"Lower Alzheimer's risk; associated with type III hyperlipoproteinaemia in some carriers.","ε2/ε3":"Slightly lower-than-average Alzheimer's risk; LDL often a bit lower.","ε3/ε3":"The most common APOE type (≈ 60%); average risk.","ε3/ε4":"One ε4 copy (≈ 25% of people). Associated with higher LDL cholesterol and roughly 2–3× average late-onset Alzheimer's risk — a risk factor, not a diagnosis; most ε3/ε4 carriers do not develop Alzheimer's. Cardiovascular fitness, blood-pressure, LDL, sleep and glucose control are the modifiable factors with the best evidence.","ε4/ε4":"Two ε4 copies (≈ 2%). Substantially higher late-onset Alzheimer's risk; consider genetic counselling."},"genes":{"DIO1":{"chrom":"1","end":54376759,"start":54356912,"strand":1},"DIO2":{"chrom":"14","end":80854100,"start":80663873,"strand":-1},"DIO3":{"chrom":"14","end":102029789,"start":102027688,"strand":1},"TSHR":{"chrom":"14","end":81612646,"start":81421333,"strand":1},"TSHB":{"chrom":"1","end":115576941,"start":115572415,"strand":1},"TRH":{"chrom":"3","end":129696781,"start":129693148,"strand":1},"TRHR":{"chrom":"8","end":110131813,"start":110098850,"strand":1},"TPO":{"chrom":"2","end":1547483,"start":1377995,"strand":1},"TG":{"chrom":"8","end":134147147,"start":133879203,"strand":1},"IYD":{"chrom":"6","end":150727105,"start":150690028,"strand":1},"DUOX1":{"chrom":"15","end":45457774,"start":45422131,"strand":1},"DUOX2":{"chrom":"15","end":45406542,"start":45384848,"strand":-1},"DUOXA2":{"chrom":"15","end":45410619,"start":45406519,"strand":1},"SLC5A5":{"chrom":"19","end":18005983,"start":17982782,"strand":1},"SLC26A4":{"chrom":"7","end":107358254,"start":107301080,"strand":1},"SLC26A7":{"chrom":"8","end":92410378,"start":92221722,"strand":1},"SLC16A2":{"chrom":"X","end":73753752,"start":73641085,"strand":1},"SLC16A10":{"chrom":"6","end":111552397,"start":111408781,"strand":1},"SLCO1C1":{"chrom":"12","end":20906320,"start":20848289,"strand":1},"THRA":{"chrom":"17","end":38250120,"start":38214543,"strand":1},"THRB":{"chrom":"3","end":24536773,"start":24158651,"strand":-1},"PAX8":{"chrom":"2","end":114036527,"start":113973574,"strand":-1},"NKX2-1":{"chrom":"14","end":36990354,"start":36985602,"strand":-1},"FOXE1":{"chrom":"9","end":100618986,"start":100615536,"strand":1},"HHEX":{"chrom":"10","end":94455403,"start":94447945,"strand":1},"SECISBP2":{"chrom":"9","end":91974557,"start":91933421,"strand":1},"SEPP1":{"chrom":"5","end":42887494,"start":42799982,"strand":-1},"GPX1":{"chrom":"3","end":49396033,"start":49394609,"strand":-1},"GPX3":{"chrom":"5","end":150408554,"start":150400124,"strand":1},"TXNRD1":{"chrom":"12","end":104744061,"start":104609557,"strand":1},"PDE8B":{"chrom":"5","end":76725632,"start":76506274,"strand":1},"PDE10A":{"chrom":"6","end":166400091,"start":165740776,"strand":-1},"CAPZB":{"chrom":"1","end":19812066,"start":19665267,"strand":-1},"CTLA4":{"chrom":"2","end":204738683,"start":204732509,"strand":1},"PTPN22":{"chrom":"1","end":114414381,"start":114356433,"strand":-1},"SH2B3":{"chrom":"12","end":111889427,"start":111843752,"strand":1},"VAV3":{"chrom":"1","end":108507766,"start":108113782,"strand":-1},"FCRL3":{"chrom":"1","end":157670647,"start":157644111,"strand":-1},"CD40":{"chrom":"20","end":44758502,"start":44746911,"strand":1},"IL2RA":{"chrom":"10","end":6104288,"start":6052652,"strand":-1},"TTR":{"chrom":"18","end":29178974,"start":29171689,"strand":1},"SERPINA7":{"chrom":"X","end":105282729,"start":105277197,"strand":-1},"ALB":{"chrom":"4","end":74287129,"start":74262831,"strand":1},"CRYM":{"chrom":"16","end":21314404,"start":21250195,"strand":-1}},"positions":{"rs225014":["14",80669580],"rs12885300":["14",80678266],"rs2235544":["1",54375570],"rs11206244":["1",54375701],"rs12095080":["1",54376730],"rs4704397":["5",76518442],"rs6885099":["5",76530349],"rs7850258":["9",100549013],"rs1991517":["14",81610583],"rs4915077":["1",108366016],"rs2476601":["1",114377568],"rs6679677":["1",114303808],"rs3087243":["2",204738919],"rs231775":["2",204732714],"rs3184504":["12",111884608],"rs7574865":["2",191964633],"rs7528684":["1",157670816],"rs2187668":["6",32605884],"rs7454108":["6",32681483],"rs179247":["14",81432546],"rs12101255":["14",81451052],"rs2268458":["14",81462895],"rs965513":["9",100556109],"rs1867277":["9",100615914],"rs944289":["14",36649246],"rs966423":["2",218310340],"rs1050450":["3",49394834],"rs3877899":["5",42801268],"rs7579":["5",42800808],"rs855791":["22",37462936],"rs1800562":["6",26093141],"rs1799945":["6",26091179],"rs12934922":["16",81301694],"rs7501331":["16",81314496],"rs2282679":["4",72608383],"rs1544410":["12",48239835],"rs731236":["12",48238757],"rs601338":["19",49206674],"rs1801198":["22",31011610],"rs1801133":["1",11856378],"rs1801131":["1",11854476],"rs1805087":["1",237048500],"rs1801394":["5",7870973],"rs2236225":["14",64908845],"rs234706":["21",44485350],"rs1979277":["17",18232096],"rs3733890":["5",78421959],"rs7946":["17",17409560],"rs4680":["22",19951271],"rs6323":["X",43591036],"rs6025":["1",169519049],"i3002432":["11",46761055],"rs10757274":["9",22096055],"rs1333049":["9",22125503],"rs10455872":["6",161010118],"rs3798220":["6",160961137],"rs5742904":["2",21229160],"rs11591147":["1",55505647],"rs4343":["17",61566031],"rs7903146":["10",114758349],"rs10811661":["9",22134094],"rs13266634":["8",118184783],"rs10830963":["11",92708710],"rs1801282":["3",12393125],"rs9939609":["16",53820527],"rs17782313":["18",57851097],"rs738409":["22",44324727],"rs4244285":["10",96541616],"rs4986893":["10",96540410],"rs12248560":["10",96521657],"rs1799853":["10",96702047],"rs1057910":["10",96741053],"rs9923231":["16",31107689],"rs4149056":["12",21331549],"rs3892097":["22",42524947],"rs3918290":["1",97915614],"rs1142345":["6",18130918],"rs1800460":["6",18139228],"rs776746":["7",99270539],"rs762551":["15",75041917],"rs1800497":["11",113270828],"rs1799971":["6",154360797],"rs1695":["11",67352689],"rs4880":["6",160113872],"rs1800566":["16",69745145],"rs1800629":["6",31543031],"rs4988235":["2",136608646],"rs671":["12",112241766],"rs1815739":["11",66328095],"rs174537":["11",61552680],"rs6265":["11",27679916],"rs12913832":["15",28365618],"rs17822931":["16",48258198],"rs16969968":["15",78882925],"rs429358":["19",45411941],"rs7412":["19",45412079],"rs28929474":["14",94844947],"rs17580":["14",94847262]},"site":{"repo":"https://github.com/aimoony/thyroid-snp-check","url":"https://aimoony.github.io/thyroid-snp-check/"}}</script>
+<script>
+"use strict";
+const D = JSON.parse(document.getElementById("snp-data").textContent);
+const CAT = Object.fromEntries(D.categories.map(c => [c.key, c]));
+const NO_CALLS = new Set(["--", "00", "", "-", "0"]);
+const isIndel = g => /^[ID]+$/.test(g);
+const COMP = {A: "T", T: "A", C: "G", G: "C"};
+const APOE_IDS = new Set(["rs429358", "rs7412"]);
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+let LAST = null;   // results of the current run, held in memory only
+
+// ------------------------------------------------------------------ landing content
+(function landing() {
+  const perCat = {}, groups = {Thyroid: 0, Common: 0};
+  for (const s of D.snps) { groups[CAT[s.cat].group]++; perCat[s.cat] = (perCat[s.cat] || 0) + 1; }
+  $("repo-link").href = $("repo-link2").href = D.site.repo;
+  const cards = [
+    ["thy_conv", "T4 → T3 conversion", "DIO1 and DIO2, including Thr92Ala."],
+    ["thy_tsh", "TSH set-point", "PDE8B, FOXE1 and VAV3."],
+    ["thy_auto", "Hashimoto's & Graves'", "PTPN22, CTLA4, TSHR and celiac-linked HLA-DQ."],
+    ["thy_cancer", "Nodules & cancer", "FOXE1, PTCSC3 and DIRC3."],
+    ["thy_cof", "Thyroid nutrients", "Selenium, iron, vitamin A/D and B12 genes."],
+  ].map(([k, title, text]) => [`${perCat[k] || 0} SNPs`, title, text]);
+  cards.push([`${groups.Common} SNPs`, "Common variants", "MTHFR, COMT, clotting, drug response and more."]);
+  cards.push(["CSV export", "Every thyroid-gene SNP", `All SNPs your chip has in ${Object.keys(D.genes).length} thyroid genes.`]);
+  $("feat").innerHTML = cards.map(([n, h, p]) =>
+    `<div class="card feat"><div class="n">${esc(n)}</div><h3>${esc(h)}</h3><p>${esc(p)}</p></div>`).join("");
+})();
+
+// ------------------------------------------------------------------ file reading
+async function inflate(bytes, format) {
+  if (!("DecompressionStream" in window))
+    throw new Error("This browser can't unzip files. Unzip it first and choose the .txt/.csv inside.");
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream(format));
+  return new TextDecoder().decode(await new Response(stream).arrayBuffer());
+}
+
+async function unzip(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--)
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error("That doesn't look like a valid .zip file.");
+  const count = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  const entries = [];
+  for (let k = 0; k < count && dv.getUint32(p, true) === 0x02014b50; k++) {
+    const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    entries.push({
+      flags: dv.getUint16(p + 8, true), method: dv.getUint16(p + 10, true),
+      csize: dv.getUint32(p + 20, true), usize: dv.getUint32(p + 24, true),
+      off: dv.getUint32(p + 42, true), name: new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nlen)),
+    });
+    p += 46 + nlen + xlen + clen;
+  }
+  const usable = entries.filter(x => /\.(txt|csv|tsv)$/i.test(x.name) && !x.name.includes("__MACOSX"));
+  // Genes for Good zips hold several formats; prefer their 23andMe-style file
+  const e = usable.find(x => /GFG.*23andMe\.txt$/i.test(x.name)) || usable.sort((a, b) => b.usize - a.usize)[0];
+  if (!e && entries.some(x => /\.vcf(\.gz)?$/i.test(x.name)))
+    throw new Error("This zip contains a VCF sequencing file. Only genotyping-chip raw data files are supported for now.");
+  if (!e) throw new Error("No .txt or .csv file found inside the zip.");
+  if (e.flags & 1) throw new Error("This zip is password-protected. Unzip it first, then choose the file inside.");
+  const start = e.off + 30 + dv.getUint16(e.off + 26, true) + dv.getUint16(e.off + 28, true);
+  const data = u8.subarray(start, start + e.csize);
+  if (e.method === 0) return new TextDecoder().decode(data);
+  if (e.method === 8) return inflate(data, "deflate-raw");
+  throw new Error("Unsupported zip compression. Unzip the file first and choose the file inside.");
+}
+
+// gzip files can hold several members back to back (some FamilyTreeDNA downloads).
+// Decode member by member so every browser returns all of the data.
+async function gunzipAll(u8) {
+  const cands = [];
+  for (let i = 1; i < u8.length - 3; i++)
+    if (u8[i] === 0x1f && u8[i + 1] === 0x8b && u8[i + 2] === 8 && u8[i + 3] < 32) cands.push(i);
+  cands.push(u8.length);
+  const parts = [];
+  let start = 0, k = 0;
+  while (start < u8.length) {
+    let ok = false;
+    for (; k < cands.length; k++) {
+      if (cands[k] <= start) continue;
+      try { parts.push(await inflate(u8.subarray(start, cands[k]), "gzip")); start = cands[k]; k++; ok = true; break; }
+      catch (e) { /* that candidate was inside compressed data; try the next one */ }
+    }
+    if (!ok) throw new Error("Couldn't decompress this .gz file. Extract it first, then choose the file inside.");
+  }
+  return parts.join("");
+}
+
+const MAX_BYTES = 300 * 1024 * 1024;
+async function readFile(file) {
+  if (file.size > MAX_BYTES)
+    throw new Error("This file is too large for a genotyping-chip download. Sequencing files (VCF from Nebula, Dante and others) aren't supported yet.");
+  const u8 = new Uint8Array(await file.arrayBuffer());
+  let text;
+  if (u8[0] === 0x50 && u8[1] === 0x4b) text = await unzip(u8);
+  else if (u8[0] === 0x1f && u8[1] === 0x8b) text = await gunzipAll(u8);
+  else text = new TextDecoder().decode(u8);
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+  if (/^##fileformat=VCF/.test(text) || /^#CHROM\tPOS\tID/m.test(text.slice(0, 200000)))
+    throw new Error("This is a VCF file from DNA sequencing (e.g. Nebula, Dante). Only genotyping-chip raw data files (23andMe, AncestryDNA, MyHeritage, FTDNA, Living DNA) are supported for now.");
+  return text;
+}
+
+// ------------------------------------------------------------------ parsing
+const CHR = {"23": "X", "24": "Y", "25": "X", "26": "MT", "M": "MT", "XY": "X", "PAR": "X"};
+const BUILD_ANCHOR = {742429: "NCBI36", 752566: "GRCh37", 817186: "GRCh38"};   // position of rs3094315
+const HEAD = {
+  id: /^(rsid|rs id|snp name|snp|name|marker|id)$/, chr: /^(chr|chromosome|chrom)$/, pos: /^(position|pos|coordinate)$/,
+  gt: /^(genotype|result|call)$/, a1: /^allele ?_?1/, a2: /^allele ?_?2/,
+};
+
+// Quotes stripped; tab/comma files split on those (tolerating repeated tabs and stray
+// spaces), whitespace-only files split on whitespace.
+function splitFields(line) {
+  line = line.replace(/"/g, "");
+  return (/[\t,]/.test(line) ? line.split(/\s*[\t,]\s*/) : line.split(/\s+/)).map(x => x.trim()).filter(Boolean);
+}
+
+function parseGenome(text) {
+  const wanted = new Set(D.snps.map(s => s.rsid));
+  const byPos = new Map(Object.entries(D.positions).map(([id, [c, p]]) => [c + ":" + p, id]));
+  const byChrom = {};
+  for (const [g, r] of Object.entries(D.genes))
+    (byChrom[r.chrom] ||= []).push([r.start - 5000, r.end + 5000, g]);
+  const found = new Map(), pos = new Map(), viaPos = new Set(), hits = [];
+  let total = 0, nocall = 0, build = "unknown", format = "unknown", anchor = null;
+  let cols = null;     // column indexes from an uncommented header row, when the file has one
+  for (let i = 0, n = text.length; i < n;) {
+    let j = text.indexOf("\n", i); if (j < 0) j = n;
+    const line = text.slice(i, j).trim(); i = j + 1;
+    if (!line) continue;
+    if (line[0] === "#") {
+      const l = line.toLowerCase();
+      if (/build 36|ncbi36|hg18/.test(l)) build = "NCBI36";
+      else if (/build 37|grch37|hg19/.test(l)) build = "GRCh37";
+      else if (/build 38|grch38|hg38/.test(l)) build = "GRCh38";
+      if (format === "unknown") {
+        if (/23andme/.test(l)) format = "23andMe";
+        else if (/ancestrydna/.test(l)) format = "AncestryDNA";
+        else if (/myheritage/.test(l)) format = "MyHeritage";
+        else if (/living ?dna/.test(l)) format = "Living DNA";
+      }
+      continue;
+    }
+    const f = splitFields(line);
+    if (f.length < 3) continue;
+    if (!/^\d+$/.test(f[cols ? cols.pos : 2] || "")) {      // header row (or junk): learn its columns
+      const low = f.map(x => x.toLowerCase());
+      const idx = re => low.findIndex(x => re.test(x));
+      const c = {id: idx(HEAD.id), chr: idx(HEAD.chr), pos: idx(HEAD.pos), gt: idx(HEAD.gt), a1: idx(HEAD.a1), a2: idx(HEAD.a2)};
+      if (c.id >= 0 && c.chr >= 0 && c.pos >= 0 && (c.gt >= 0 || c.a1 >= 0)) cols = c;
+      continue;
+    }
+    let rsid, chromRaw, p, gt;
+    if (cols) {
+      rsid = f[cols.id]; chromRaw = f[cols.chr]; p = +f[cols.pos];
+      gt = cols.gt >= 0 ? f[cols.gt] : (f[cols.a1] || "") + (f[cols.a2] || "");
+    } else {
+      rsid = f[0]; chromRaw = f[1]; p = +f[2];
+      if (f.length >= 5 && f[3].length <= 1 && f[4].length <= 1) { gt = f[3] + f[4]; if (format === "unknown") format = "AncestryDNA"; }
+      else gt = f[3] || "";
+    }
+    if (rsid === undefined || chromRaw === undefined || gt === undefined) continue;
+    gt = gt.toUpperCase().replace(/[0\-]/g, "") || "--";
+    const c0 = String(chromRaw).replace(/^chr/i, "").toUpperCase();
+    const chrom = CHR[c0] || c0;
+    if (chrom === "0") continue;
+    total++;
+    if (gt === "--") nocall++;
+    if (rsid === "rs3094315") anchor = p;
+    if (wanted.has(rsid)) {
+      if (!found.has(rsid) || viaPos.has(rsid)) { found.set(rsid, gt); pos.set(rsid, [chrom, p]); viaPos.delete(rsid); }
+    } else {
+      // providers that use their own IDs (or a different rsID) for a report SNP: match by GRCh37 position
+      const m = byPos.get(chrom + ":" + p);
+      if (m && !found.has(m)) { found.set(m, gt); pos.set(m, [chrom, p]); viaPos.add(m); }
+    }
+    const iv = byChrom[chrom];
+    if (iv) for (const [a, b, g] of iv) if (p >= a && p <= b) hits.push([g, rsid, chrom, p, gt]);
+  }
+  if (build === "unknown" && anchor) build = BUILD_ANCHOR[anchor] || "unknown";
+  if (build === "unknown" && format === "AncestryDNA") build = "GRCh37";
+  if (format === "unknown") format = cols ? "auto-detected columns" : "auto-detected";
+  if (build !== "GRCh37" && build !== "unknown") {      // positions are only valid on GRCh37
+    for (const id of viaPos) { found.delete(id); pos.delete(id); }
+    hits.length = 0;
+  }
+  return {found, pos, hits, total, nocall, build, format};
+}
+
+// ------------------------------------------------------------------ interpretation
+function interpret(s, raw) {
+  if (raw == null) return {gt: null, copies: "", status: "missing", label: "Not on chip", note: ""};
+  if (NO_CALLS.has(raw)) return {gt: raw, copies: "", status: "nocall", label: "No call", note: ""};
+  if (isIndel(raw)) return {gt: raw, copies: "", status: "nocall", label: "Indel call", note: "Your file reports an insertion/deletion call here, not a SNP genotype."};
+  const exp = new Set(s.alleles);
+  let gt = raw, flipped = false;
+  if (![...gt].every(c => exp.has(c))) {
+    const palindromic = COMP[s.alleles[0]] === s.alleles[1];
+    const comp = [...gt].map(c => COMP[c] || c).join("");
+    if (!palindromic && [...comp].every(c => exp.has(c))) { gt = comp; flipped = true; }
+    else return {gt: raw, copies: "", status: "check", label: "Check strand",
+                 note: `Genotype ${raw} doesn't match expected alleles ${[...s.alleles].join("/")}; possible strand flip or different variant.`};
+  }
+  const ploidy = gt.length, n = [...gt].filter(c => c === s.effect).length;
+  let note = s.notes[String(ploidy === 2 ? n : n * 2)] || "";
+  if (flipped) note = (note ? note + " " : "") + `(Your file reported ${raw} on the opposite strand; shown here as ${gt}.)`;
+  const copies = ploidy === 1 ? `${n} (hemizygous)` : String(n);
+  let status, label;
+  if (s.kind === "risk") {
+    status = n === 0 ? "typical" : (n === ploidy ? "hom" : "het");
+    label = {typical: "Typical", het: "1 copy", hom: "2 copies"}[status];
+    if (ploidy === 1 && n) label = "1 copy (X-linked)";
+  } else if (s.kind === "benefit") { status = n ? "good" : "neutral"; label = n ? "Favourable" : "Typical"; }
+  else { status = "info"; label = "Info"; }
+  return {gt, copies, status, label, note};
+}
+
+function apoeType(rows) {
+  const g = id => rows.find(r => r.rsid === id)?.gt;
+  const a = g("rs429358"), b = g("rs7412");
+  if (!a || !b || NO_CALLS.has(a) || NO_CALLS.has(b) || a.length !== 2 || b.length !== 2) return null;
+  const key = [...a].sort().join("") + "|" + [...b].sort().join("");
+  return D.apoe[key] || `Unrecognised combination (${a}, ${b})`;
+}
+
+// first sentence, skipping "i.e." / "e.g." (no regex lookbehind: older Safari can't parse it)
+const firstSentence = t => {
+  const re = /\.\s+(?=[A-Z])/g; let m;
+  while ((m = re.exec(t))) if (!/(i\.e|e\.g)$/.test(t.slice(0, m.index))) return t.slice(0, m.index + 1);
+  return t;
+};
+const chip = (st, label) => `<span class="chip ${st}">${esc(label)}</span>`;
+
+// ------------------------------------------------------------------ report rendering
+function snpRow(r) {
+  const rs = r.rsid.startsWith("rs")
+    ? `<a href="https://www.snpedia.com/index.php/${esc(r.rsid)}" target="_blank" rel="noopener noreferrer">${esc(r.rsid)}</a>` : esc(r.rsid);
+  return `<tr><td class="g"><b>${esc(r.gene)}</b></td>` +
+    `<td class="rs"><span class="lbl">SNP</span>${rs}</td><td class="v">${r.variant === r.rsid ? "" : esc(r.variant)}</td>` +
+    `<td class="gt you"><span class="lbl">You</span>${esc(r.gt || "—")}</td>` +
+    `<td class="gt eff"><span class="lbl">Effect</span>${esc(r.effect)}<div class="ev">${esc([...r.alleles].join("/"))}</div></td>` +
+    `<td class="res">${chip(r.status, r.label)}<div class="ev">${esc(r.evidence)} evidence</div></td>` +
+    `<td class="desc">${esc(r.desc)}${r.note ? `<span class="note">${esc(r.note)}</span>` : ""}</td></tr>`;
+}
+const tableHead = `<thead><tr><th>Gene</th><th>SNP</th><th>Variant</th><th>Your genotype</th><th>Effect allele</th><th>Result</th><th>What it means</th></tr></thead>`;
+
+function renderReport(res, rows, fileName) {
+  const apoe = apoeType(rows);
+  const visible = rows.filter(r => !APOE_IDS.has(r.rsid));
+  const bySec = {};
+  for (const r of visible) (bySec[r.cat] ||= []).push(r);
+  const present = rows.filter(r => r.status !== "missing");
+  const li = r => `<li>${chip(r.status, r.label)} <b>${esc(r.gene)} ${esc(r.variant)}</b> (${esc(r.rsid)}, ${esc(r.gt)}) — ${esc(r.note || firstSentence(r.desc))}</li>`;
+  const out = [];
+  const siteText = D.site.url.replace(/^https:\/\//, "").replace(/\/$/, "");
+  out.push(`<p class="print-only pdf-link">Get your own free report at <a href="${esc(D.site.url)}">${esc(siteText)}</a></p>`);
+  out.push(`<h1>Your thyroid &amp; common SNP report</h1>`);
+  out.push(`<p class="sub">${esc(fileName)} · ${esc(res.format)} format · build ${esc(res.build)} · generated ${new Date().toLocaleDateString()} · made with <a href="${esc(D.site.url)}">Thyroid SNP Check</a>, a free tool</p>`);
+  out.push(`<nav class="rnav"><a href="#r-summary">Summary</a>` +
+    D.categories.map(c => `<a href="#r-${c.key}">${esc(c.title)}</a>`).join("") +
+    `<a href="#r-regions">All thyroid-gene SNPs</a></nav>`);
+
+  out.push(`<h2 id="r-summary">Summary</h2><div class="cards">`);
+  out.push(`<div class="card"><b>SNPs in your file</b><div class="big">${res.total.toLocaleString()}</div><span class="small">no-call rate ${(100 * res.nocall / Math.max(res.total, 1)).toFixed(2)}%</span></div>`);
+  out.push(`<div class="card"><b>Report SNPs found</b><div class="big">${present.length} / ${rows.length}</div><span class="small">others aren't on your chip version</span></div>`);
+  out.push(`<div class="card"><b>Thyroid-gene SNPs</b><div class="big">${res.hits.length.toLocaleString()}</div><span class="small">${res.build === "GRCh38" ? "skipped: file uses build 38" : `across ${Object.keys(D.genes).length} genes (CSV download)`}</span></div>`);
+  out.push(`</div>`);
+
+  out.push(`<h3>Thyroid at a glance</h3><div class="card">`);
+  for (const c of D.categories.filter(c => c.group === "Thyroid")) {
+    const rs = bySec[c.key] || [];
+    const hits = rs.filter(r => ["het", "hom", "good"].includes(r.status));
+    out.push(`<p style="margin:10px 0 2px"><b>${esc(c.title)}</b> — ${rs.filter(r => r.status !== "missing").length} SNPs tested</p>`);
+    out.push(hits.length ? `<ul class="find">${hits.map(li).join("")}</ul>` : `<p class="small" style="margin:0">No variant alleles flagged.</p>`);
+  }
+  out.push(`</div>`);
+
+  const common = visible.filter(r => CAT[r.cat].group === "Common" &&
+    ((["het", "hom"].includes(r.status) && r.evidence !== "limited") || r.status === "good"));
+  if (common.length) out.push(`<h3>Other notable findings (moderate/strong evidence)</h3><div class="card"><ul class="find">${common.map(li).join("")}</ul></div>`);
+  const checks = rows.filter(r => r.status === "check");
+  if (checks.length) out.push(`<h3>Needs checking</h3><div class="card"><ul class="find">${checks.map(r => `<li>${chip("check", "Check")} ${esc(r.gene)} ${esc(r.rsid)}: ${esc(r.note)}</li>`).join("")}</ul></div>`);
+
+  if (apoe) {
+    const apoeRows = rows.filter(r => APOE_IDS.has(r.rsid));
+    out.push(`<details class="reveal"><summary>APOE result (Alzheimer's &amp; cholesterol), hidden by default. Tap to reveal.</summary>` +
+      `<p class="small" style="margin-top:0">APOE ε4 is linked to higher Alzheimer's risk. Some people prefer not to know, or would rather learn it with a genetic counsellor. It's hidden until you choose to open it.</p>` +
+      `<div class="cards"><div class="card wide"><b>APOE type</b><div class="big">${esc(apoe)}</div><span class="small">${esc(D.apoeNotes[apoe] || "")}</span></div></div>` +
+      `<div class="tbl snps"><table>${tableHead}<tbody>${apoeRows.map(snpRow).join("")}</tbody></table></div></details>`);
+  }
+
+  out.push(`<p class="warn" style="margin-top:16px"><b>Key:</b> ${chip("typical", "Typical")} no copies · ${chip("het", "1 copy")} · ${chip("hom", "2 copies")} of the effect allele · ${chip("good", "Favourable")} protective allele · ${chip("info", "Info")} descriptive. Effects are small and aren't diagnoses; your labs matter more.</p>`);
+
+  let group = null;
+  for (const c of D.categories) {
+    if (c.group !== group) { out.push(`<h2>${esc(c.group)} variants</h2>`); group = c.group; }
+    const rs = bySec[c.key] || [];
+    out.push(`<h3 id="r-${c.key}">${esc(c.title)}</h3><div class="tbl snps"><table>${tableHead}<tbody>${rs.map(snpRow).join("")}</tbody></table></div>`);
+  }
+
+  const perGene = {};
+  for (const h of res.hits) perGene[h[0]] = (perGene[h[0]] || 0) + 1;
+  out.push(`<h2 id="r-regions">All thyroid-pathway gene SNPs on your chip</h2>`);
+  out.push(`<p>The full list is in the “All thyroid-gene SNPs” download. Most have no known effect; the tables above show the ones that do.</p>`);
+  out.push(`<div class="tbl"><table><thead><tr><th>Gene</th><th>Location (GRCh37)</th><th>SNPs on chip</th></tr></thead><tbody>` +
+    Object.keys(D.genes).sort().map(g => { const r = D.genes[g];
+      return `<tr><td><b>${esc(g)}</b></td><td class="rs">chr${esc(r.chrom)}:${r.start.toLocaleString()}-${r.end.toLocaleString()}</td><td>${perGene[g] || 0}</td></tr>`; }).join("") +
+    `</tbody></table></div>`);
+
+  out.push(`<div class="card credit" style="margin-top:24px"><p><b>Thyroid SNP Check</b> is a free, open-source tool. Your file was analysed on your own device and never uploaded.</p><p><a href="${esc(D.site.repo)}">${esc(D.site.repo.replace(/^https:\/\//, ""))}</a></p></div>`);
+  out.push(`<h2>Method &amp; caveats</h2><div class="card small"><p>Genotypes are compared on the GRCh37 plus strand against a curated SNP list, counting copies of each effect allele. Opposite-strand calls are flipped when unambiguous and flagged otherwise.</p><p>Consumer chips are research-grade and miss deletions and copy-number changes. Confirm anything important (APOE, Factor V Leiden, HFE, drug response) with a clinical test. Not medical advice.</p></div>`);
+  return out.join("");
+}
+
+// ------------------------------------------------------------------ downloads
+function download(name, content, type) {
+  const url = URL.createObjectURL(new Blob([content], {type}));
+  const a = Object.assign(document.createElement("a"), {href: url, download: name});
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+const csvCell = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+const toCsv = rows => "﻿" + rows.map(r => r.map(csvCell).join(",")).join("\r\n");
+
+$("dl-csv").onclick = () => LAST && download("snp_extracted.csv", toCsv([
+  ["group", "section", "gene", "rsid", "variant", "chrom", "position", "genotype", "expected_alleles", "effect_allele",
+   "effect_copies", "status", "evidence", "interpretation", "genotype_note"],
+  ...LAST.rows.map(r => [CAT[r.cat].group, CAT[r.cat].title, r.gene, r.rsid, r.variant, r.chrom, r.pos, r.gt || "",
+    [...r.alleles].join("/"), r.effect, r.copies, r.label, r.evidence, r.desc, r.note])]), "text/csv");
+$("dl-region").onclick = () => LAST && download("thyroid_gene_region_snps.csv", toCsv([
+  ["gene", "rsid", "chrom", "position", "genotype", "in_report"],
+  ...LAST.res.hits.slice().sort((a, b) => a[0].localeCompare(b[0]) || a[3] - b[3])
+    .map(h => [...h, LAST.res.found.has(h[1]) ? "yes" : ""])]), "text/csv");
+$("dl-html").onclick = () => LAST && download("thyroid_snp_report.html",
+  `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">` +
+  `<title>Thyroid SNP Report</title><style>${$("rcss").textContent}</style></head><body><main>${$("report").innerHTML}</main></body></html>`,
+  "text/html");
+// The browser's print dialog has a "Save as PDF" destination; the document title
+// becomes the suggested file name.
+$("dl-print").onclick = () => {
+  const t = document.title;
+  document.title = "Thyroid SNP Report";
+  window.print();
+  setTimeout(() => { document.title = t; }, 1000);
+};
+$("clear").onclick = () => {
+  LAST = null; $("report").innerHTML = ""; $("report-wrap").classList.remove("on");
+  $("landing").style.display = ""; $("file").value = ""; setStatus("");
+  window.scrollTo({top: 0});
+};
+
+// ------------------------------------------------------------------ wiring
+function setStatus(msg, err) { const s = $("status"); s.textContent = msg; s.className = "status" + (err ? " err" : ""); }
+const tick = () => new Promise(r => setTimeout(r, 30));
+
+async function handle(file) {
+  if (!file) return;
+  try {
+    setStatus(`Reading ${file.name}…`); await tick();
+    const text = await readFile(file);
+    setStatus("Analysing…"); await tick();
+    const res = parseGenome(text);
+    if (res.total < 1000) throw new Error("This doesn't look like a raw DNA data file. Expected a 23andMe, AncestryDNA, MyHeritage or FTDNA raw data download.");
+    if (res.build === "GRCh38") res.hits = [];   // gene coordinates are GRCh37
+    const rows = D.snps.map(s => {
+      const i = interpret(s, res.found.get(s.rsid));
+      const [chrom, pos] = res.pos.get(s.rsid) || ["", ""];
+      return {...s, ...i, chrom, pos};
+    });
+    LAST = {res, rows};
+    $("report").innerHTML = renderReport(res, rows, file.name);
+    $("landing").style.display = "none";
+    $("report-wrap").classList.add("on");
+    setStatus("");
+    window.scrollTo({top: 0});
+  } catch (e) {
+    console.error(e);
+    setStatus(e.message || "Couldn't read that file.", true);
+  }
+}
+
+$("file").addEventListener("change", e => handle(e.target.files[0]));
+const drop = $("drop");
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => handle(e.dataTransfer.files[0]));
+// stop a file dropped anywhere else from navigating the tab to it
+window.addEventListener("dragover", e => e.preventDefault());
+window.addEventListener("drop", e => e.preventDefault());
+
+// Example results on the landing page (made-up genotypes, rendered by the real report code)
+(function example() {
+  const sample = [["rs225014", "CC"], ["rs2235544", "AA"], ["rs2476601", "AG"]];
+  const rows = sample.map(([id, gt]) => {
+    const s = D.snps.find(x => x.rsid === id);
+    return s && {...s, ...interpret(s, gt), desc: firstSentence(s.desc)};
+  }).filter(Boolean);
+  $("example").innerHTML = `<span class="ex-tag">Example results</span>` +
+    `<div class="tbl snps"><table>${tableHead}<tbody>${rows.map(snpRow).join("")}</tbody></table></div>`;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,266 @@
+{
+ "ALB": {
+  "chrom": "4",
+  "end": 74287129,
+  "start": 74262831,
+  "strand": 1
+ },
+ "CAPZB": {
+  "chrom": "1",
+  "end": 19812066,
+  "start": 19665267,
+  "strand": -1
+ },
+ "CD40": {
+  "chrom": "20",
+  "end": 44758502,
+  "start": 44746911,
+  "strand": 1
+ },
+ "CRYM": {
+  "chrom": "16",
+  "end": 21314404,
+  "start": 21250195,
+  "strand": -1
+ },
+ "CTLA4": {
+  "chrom": "2",
+  "end": 204738683,
+  "start": 204732509,
+  "strand": 1
+ },
+ "DIO1": {
+  "chrom": "1",
+  "end": 54376759,
+  "start": 54356912,
+  "strand": 1
+ },
+ "DIO2": {
+  "chrom": "14",
+  "end": 80854100,
+  "start": 80663873,
+  "strand": -1
+ },
+ "DIO3": {
+  "chrom": "14",
+  "end": 102029789,
+  "start": 102027688,
+  "strand": 1
+ },
+ "DUOX1": {
+  "chrom": "15",
+  "end": 45457774,
+  "start": 45422131,
+  "strand": 1
+ },
+ "DUOX2": {
+  "chrom": "15",
+  "end": 45406542,
+  "start": 45384848,
+  "strand": -1
+ },
+ "DUOXA2": {
+  "chrom": "15",
+  "end": 45410619,
+  "start": 45406519,
+  "strand": 1
+ },
+ "FCRL3": {
+  "chrom": "1",
+  "end": 157670647,
+  "start": 157644111,
+  "strand": -1
+ },
+ "FOXE1": {
+  "chrom": "9",
+  "end": 100618986,
+  "start": 100615536,
+  "strand": 1
+ },
+ "GPX1": {
+  "chrom": "3",
+  "end": 49396033,
+  "start": 49394609,
+  "strand": -1
+ },
+ "GPX3": {
+  "chrom": "5",
+  "end": 150408554,
+  "start": 150400124,
+  "strand": 1
+ },
+ "HHEX": {
+  "chrom": "10",
+  "end": 94455403,
+  "start": 94447945,
+  "strand": 1
+ },
+ "IL2RA": {
+  "chrom": "10",
+  "end": 6104288,
+  "start": 6052652,
+  "strand": -1
+ },
+ "IYD": {
+  "chrom": "6",
+  "end": 150727105,
+  "start": 150690028,
+  "strand": 1
+ },
+ "NKX2-1": {
+  "chrom": "14",
+  "end": 36990354,
+  "start": 36985602,
+  "strand": -1
+ },
+ "PAX8": {
+  "chrom": "2",
+  "end": 114036527,
+  "start": 113973574,
+  "strand": -1
+ },
+ "PDE10A": {
+  "chrom": "6",
+  "end": 166400091,
+  "start": 165740776,
+  "strand": -1
+ },
+ "PDE8B": {
+  "chrom": "5",
+  "end": 76725632,
+  "start": 76506274,
+  "strand": 1
+ },
+ "PTPN22": {
+  "chrom": "1",
+  "end": 114414381,
+  "start": 114356433,
+  "strand": -1
+ },
+ "SECISBP2": {
+  "chrom": "9",
+  "end": 91974557,
+  "start": 91933421,
+  "strand": 1
+ },
+ "SEPP1": {
+  "chrom": "5",
+  "end": 42887494,
+  "start": 42799982,
+  "strand": -1
+ },
+ "SERPINA7": {
+  "chrom": "X",
+  "end": 105282729,
+  "start": 105277197,
+  "strand": -1
+ },
+ "SH2B3": {
+  "chrom": "12",
+  "end": 111889427,
+  "start": 111843752,
+  "strand": 1
+ },
+ "SLC16A10": {
+  "chrom": "6",
+  "end": 111552397,
+  "start": 111408781,
+  "strand": 1
+ },
+ "SLC16A2": {
+  "chrom": "X",
+  "end": 73753752,
+  "start": 73641085,
+  "strand": 1
+ },
+ "SLC26A4": {
+  "chrom": "7",
+  "end": 107358254,
+  "start": 107301080,
+  "strand": 1
+ },
+ "SLC26A7": {
+  "chrom": "8",
+  "end": 92410378,
+  "start": 92221722,
+  "strand": 1
+ },
+ "SLC5A5": {
+  "chrom": "19",
+  "end": 18005983,
+  "start": 17982782,
+  "strand": 1
+ },
+ "SLCO1C1": {
+  "chrom": "12",
+  "end": 20906320,
+  "start": 20848289,
+  "strand": 1
+ },
+ "TG": {
+  "chrom": "8",
+  "end": 134147147,
+  "start": 133879203,
+  "strand": 1
+ },
+ "THRA": {
+  "chrom": "17",
+  "end": 38250120,
+  "start": 38214543,
+  "strand": 1
+ },
+ "THRB": {
+  "chrom": "3",
+  "end": 24536773,
+  "start": 24158651,
+  "strand": -1
+ },
+ "TPO": {
+  "chrom": "2",
+  "end": 1547483,
+  "start": 1377995,
+  "strand": 1
+ },
+ "TRH": {
+  "chrom": "3",
+  "end": 129696781,
+  "start": 129693148,
+  "strand": 1
+ },
+ "TRHR": {
+  "chrom": "8",
+  "end": 110131813,
+  "start": 110098850,
+  "strand": 1
+ },
+ "TSHB": {
+  "chrom": "1",
+  "end": 115576941,
+  "start": 115572415,
+  "strand": 1
+ },
+ "TSHR": {
+  "chrom": "14",
+  "end": 81612646,
+  "start": 81421333,
+  "strand": 1
+ },
+ "TTR": {
+  "chrom": "18",
+  "end": 29178974,
+  "start": 29171689,
+  "strand": 1
+ },
+ "TXNRD1": {
+  "chrom": "12",
+  "end": 104744061,
+  "start": 104609557,
+  "strand": 1
+ },
+ "VAV3": {
+  "chrom": "1",
+  "end": 108507766,
+  "start": 108113782,
+  "strand": -1
+ }
+}

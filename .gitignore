@@ -1,0 +1,21 @@
+# Allow-list: this folder also holds personal genetic outputs (reports, CSVs,
+# raw data). Ignore everything, then explicitly allow the public project files.
+*
+!.gitignore
+!README.md
+!LICENSE.md
+!snp_report.py
+!snp_database.py
+!snp_positions_grch37.json
+!gene_coords_grch37.json
+!site/
+site/*
+!site/template.html
+!site/build_site.py
+!site/config.example.json
+!site/icons/
+!site/icons/*.svg
+!docs/
+docs/*
+!docs/index.html
+!docs/.nojekyll

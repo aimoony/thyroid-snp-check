@@ -23,7 +23,11 @@ it only holds public values:
              The page's Content-Security-Policy is opened for that one service only,
              and the privacy wording on the page is updated to mention it.
   repo_url   Link used for the "free, open-source" credit.
-  site_url   The live site's address, printed at the top of PDF exports.
+  site_url   The live site's address, printed at the top of PDF exports and used for the
+             canonical link, social-preview tags and docs/sitemap.xml.
+  verification  {"google": "...", "bing": "..."}: the content= values of the
+             google-site-verification / msvalidate.01 meta tags that Google Search
+             Console and Bing Webmaster Tools ask you to add. Empty values are skipped.
 
 docs/ is what GitHub Pages serves (Settings > Pages > main /docs); the same
 index.html also works on any other static host. There is no server component: all
@@ -46,6 +50,7 @@ sys.path.insert(0, str(ROOT))
 from snp_database import APOE_NOTES, APOE_TABLE, CATEGORIES, SNPS, THYROID_GENES  # noqa: E402
 
 DOCS = ROOT / "docs"
+OG_IMAGE = "og-image.png"  # docs/og-image.png, the 1200x630 social-preview card
 POS_CACHE = ROOT / "snp_positions_grch37.json"
 # 23andMe internal IDs -> the public rsID used to look up their position
 ID_ALIASES = {"i3002432": "rs1799963"}
@@ -175,6 +180,69 @@ def support_html(cfg):
             f'<div class="links">{"".join(links)}</div></div></section>')
 
 
+def features_html(data):
+    """The "What it checks" cards, built here rather than in the page's JavaScript so
+    search engines and link previews that don't run scripts can read them."""
+    cat = {c["key"]: c for c in data["categories"]}
+    per_cat, common = {}, 0
+    for s in data["snps"]:
+        per_cat[s["cat"]] = per_cat.get(s["cat"], 0) + 1
+        common += cat[s["cat"]]["group"] == "Common"
+    cards = [(f"{per_cat.get(k, 0)} SNPs", title, text) for k, title, text in [
+        ("thy_conv", "T4 → T3 conversion", "DIO1 and DIO2, including Thr92Ala."),
+        ("thy_tsh", "TSH set-point", "PDE8B, FOXE1 and VAV3."),
+        ("thy_auto", "Hashimoto's & Graves'", "PTPN22, CTLA4, TSHR and celiac-linked HLA-DQ."),
+        ("thy_cancer", "Nodules & cancer", "FOXE1, PTCSC3 and DIRC3."),
+        ("thy_cof", "Thyroid nutrients", "Selenium, iron, vitamin A/D and B12 genes."),
+    ]]
+    cards.append((f"{common} SNPs", "Common variants", "MTHFR, COMT, clotting, drug response and more."))
+    cards.append(("CSV export", "Every thyroid-gene SNP", f"All SNPs your chip has in {len(data['genes'])} thyroid genes."))
+    return "".join(f'<div class="card feat"><div class="n">{html.escape(n)}</div><h3>{html.escape(h)}</h3>'
+                   f'<p>{html.escape(t)}</p></div>' for n, h, t in cards)
+
+
+def seo_html(cfg, data, page):
+    """Canonical link, social-preview (Open Graph / Twitter) tags, structured data and
+    search-console verification tags, all derived from the page's own title/description."""
+    url = data["site"]["url"]
+    title = html.unescape(re.search(r"<title>(.*?)</title>", page).group(1))
+    desc = html.unescape(re.search(r'<meta name="description" content="(.*?)">', page).group(1))
+    a = lambda v: html.escape(v, quote=True)
+    tags = [f'<link rel="canonical" href="{a(url)}">',
+            '<meta name="robots" content="index,follow">',
+            '<meta property="og:type" content="website">',
+            '<meta property="og:site_name" content="Thyroid SNP Check">',
+            f'<meta property="og:title" content="{a(title)}">',
+            f'<meta property="og:description" content="{a(desc)}">',
+            f'<meta property="og:url" content="{a(url)}">']
+    card = "summary"
+    if (DOCS / OG_IMAGE).exists():
+        img = url.rstrip("/") + "/" + OG_IMAGE
+        card = "summary_large_image"
+        tags += [f'<meta property="og:image" content="{a(img)}">',
+                 '<meta property="og:image:width" content="1200">',
+                 '<meta property="og:image:height" content="630">',
+                 '<meta property="og:image:alt" content="Thyroid SNP Check: a free thyroid gene report from your DNA raw data">',
+                 f'<meta name="twitter:image" content="{a(img)}">']
+    tags.insert(7, f'<meta name="twitter:card" content="{card}">')
+    for engine, name in (("google", "google-site-verification"), ("bing", "msvalidate.01")):
+        code = ((cfg.get("verification") or {}).get(engine) or "").strip()
+        if code:
+            tags.append(f'<meta name="{name}" content="{a(code)}">')
+    ld = {
+        "@context": "https://schema.org", "@type": "WebApplication",
+        "name": "Thyroid SNP Check", "url": url, "description": desc,
+        "applicationCategory": "HealthApplication", "operatingSystem": "Any (runs in a web browser)",
+        "browserRequirements": "Requires JavaScript",
+        "isAccessibleForFree": True, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+        "license": "https://polyformproject.org/licenses/noncommercial/1.0.0/",
+        "codeRepository": data["site"]["repo"], "inLanguage": "en",
+    }
+    tags.append('<script type="application/ld+json">'
+                + json.dumps(ld, ensure_ascii=False).replace("</", "<\\/") + "</script>")
+    return "\n".join(tags)
+
+
 def apply_analytics(page, cfg):
     a = cfg.get("analytics") or {}
     provider, ident = (a.get("provider") or "").strip().lower(), (a.get("id") or "").strip()
@@ -198,7 +266,7 @@ def apply_analytics(page, cfg):
     return page, spec["name"]
 
 
-def build(cfg, analytics=True):
+def build(cfg, analytics=True, seo=True):
     coords = json.loads((ROOT / "gene_coords_grch37.json").read_text(encoding="utf-8"))
     data = {
         "categories": [{"key": k, "title": t, "group": g} for k, t, g in CATEGORIES],
@@ -212,6 +280,8 @@ def build(cfg, analytics=True):
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     page = (SITE / "template.html").read_text(encoding="utf-8")
     page = page.replace("/*__SNP_DATA__*/", payload).replace("<!--__DONATE__-->", support_html(cfg))
+    page = page.replace("<!--__FEATURES__-->", features_html(data))
+    page = page.replace("<!--__SEO__-->", seo_html(cfg, data, page) if seo else "")
     used = None
     if analytics:
         page, used = apply_analytics(page, cfg)
@@ -247,11 +317,16 @@ def main():
     DOCS.mkdir(exist_ok=True)
     (DOCS / ".nojekyll").touch()
     (DOCS / "index.html").write_text(page, encoding="utf-8")
+    (DOCS / "sitemap.xml").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f'  <url><loc>{html.escape(data["site"]["url"])}</loc></url>\n'
+        '</urlset>\n', encoding="utf-8")
     print(f"Wrote {DOCS / 'index.html'} ({len(page) / 1024:.0f} KB, {len(SNPS)} SNPs, "
           f"{len(data['genes'])} genes, {len(data['positions'])} SNP positions; "
           f"config: {cfg_name or 'none'}; analytics: {used or 'off'})")
     if args.preview:
-        preview, _, _ = build(cfg, analytics=False)
+        preview, _, _ = build(cfg, analytics=False, seo=False)
         Path(args.preview).write_text(to_preview(preview), encoding="utf-8")
         print(f"Wrote preview {args.preview}")
 

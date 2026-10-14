@@ -18,6 +18,10 @@
     "photo": "",
     "photo_alt": ""
   },
+  "verification": {
+    "google": "",
+    "bing": ""
+  },
   "analytics": {
     "provider": "",
     "id": ""

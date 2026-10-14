@@ -8,8 +8,9 @@
 <meta http-equiv="Content-Security-Policy"
       content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
-<title>Thyroid SNP Check</title>
-<meta name="description" content="Check your 23andMe, AncestryDNA, MyHeritage or FTDNA raw data for thyroid-related and common SNPs. Runs entirely in your browser; your file is never uploaded.">
+<title>Free Thyroid Gene Report from 23andMe &amp; AncestryDNA | Thyroid SNP Check</title>
+<meta name="description" content="Free thyroid gene report from your 23andMe, AncestryDNA, MyHeritage or FTDNA raw data: DIO2 Thr92Ala, T4 to T3 conversion, TSH, Hashimoto's and Graves' genes, MTHFR and more. Runs in your browser; your file is never uploaded.">
+<!--__SEO__-->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6c-3 0-4 3-6 3S4 8 4 14s4 10 8 10c2 0 3-2 4-4 1 2 2 4 4 4 4 0 8-4 8-10s-4-5-6-5-3-3-6-3z' fill='%232f5d8a'/%3E%3C/svg%3E">
 <style id="rcss">
 :root{--bg:#f7f7f5;--card:#fff;--ink:#1d1d1f;--muted:#6b6b70;--line:#e4e4e0;--accent:#2f5d8a;--accent-ink:#fff;
@@ -191,7 +192,7 @@ footer{border-top:1px solid var(--line);margin-top:48px;padding-top:16px;font-si
  <div class="example" id="example"></div>
 
  <h2>What it checks</h2>
- <div class="grid3 tight" id="feat"></div>
+ <div class="grid3 tight" id="feat"><!--__FEATURES__--></div>
 
  <h2>Why this one</h2>
  <div class="grid3 tight">
@@ -199,6 +200,16 @@ footer{border-top:1px solid var(--line);margin-top:48px;padding-top:16px;font-si
   <div class="card feat"><h3>Plain English</h3><p>What each result means, how many copies you carry and how strong the evidence is.</p></div>
   <div class="card feat"><h3>Private</h3><p>Analysed in your browser and never uploaded. The page is blocked from sending data anywhere.</p></div>
   <div class="card feat"><h3>Free</h3><p>No account, no cost. The code is on <a id="repo-link" href="#" target="_blank" rel="noopener noreferrer">GitHub</a>.</p></div>
+ </div>
+
+ <h2>Questions</h2>
+ <div class="grid3 tight faq">
+  <div class="card feat"><h3>Which DNA tests work?</h3><p>Raw data from 23andMe (v3 to v5), AncestryDNA, MyHeritage, FamilyTreeDNA, Living DNA, Genes for Good, tellmeGen and Sano, as .txt, .csv, .zip or .gz. Sequencing VCF files (Nebula, Dante) aren't supported yet.</p></div>
+  <div class="card feat"><h3>How do I get my raw data?</h3><p>Each company has a "download raw data" option in its account settings that gives you a .zip or .txt file. Load that file here; there's no need to unzip it.</p></div>
+  <div class="card feat"><h3>Is my DNA file uploaded?</h3><p>No. Your browser reads and analyses it on your device. There is no server to upload it to, and the page's security policy blocks it from sending your file's contents anywhere.</p></div>
+  <div class="card feat"><h3>Which thyroid genes are checked?</h3><p>DIO1 and DIO2 (T4 to T3 conversion), PDE8B, FOXE1 and VAV3 (TSH), PTPN22, CTLA4, SH2B3, TSHR and HLA-DQ2/DQ8 (Hashimoto's and Graves'), PTCSC3 and DIRC3 (nodules), plus selenium, iron, vitamin A/D and B12 genes.</p></div>
+  <div class="card feat"><h3>What else is in the report?</h3><p>Common variants such as MTHFR, COMT, Factor V Leiden, HFE, APOE (hidden until you choose to see it) and drug-response genes, each with an evidence level and a plain-English note.</p></div>
+  <div class="card feat"><h3>Is this a diagnosis?</h3><p>No. Consumer chips are research-grade and most of these SNPs have small effects. Use the report to ask better questions, and confirm anything important with your doctor and a clinical test.</p></div>
  </div>
 </div>
 
@@ -236,20 +247,7 @@ let LAST = null;   // results of the current run, held in memory only
 
 // ------------------------------------------------------------------ landing content
 (function landing() {
-  const perCat = {}, groups = {Thyroid: 0, Common: 0};
-  for (const s of D.snps) { groups[CAT[s.cat].group]++; perCat[s.cat] = (perCat[s.cat] || 0) + 1; }
   $("repo-link").href = $("repo-link2").href = D.site.repo;
-  const cards = [
-    ["thy_conv", "T4 → T3 conversion", "DIO1 and DIO2, including Thr92Ala."],
-    ["thy_tsh", "TSH set-point", "PDE8B, FOXE1 and VAV3."],
-    ["thy_auto", "Hashimoto's & Graves'", "PTPN22, CTLA4, TSHR and celiac-linked HLA-DQ."],
-    ["thy_cancer", "Nodules & cancer", "FOXE1, PTCSC3 and DIRC3."],
-    ["thy_cof", "Thyroid nutrients", "Selenium, iron, vitamin A/D and B12 genes."],
-  ].map(([k, title, text]) => [`${perCat[k] || 0} SNPs`, title, text]);
-  cards.push([`${groups.Common} SNPs`, "Common variants", "MTHFR, COMT, clotting, drug response and more."]);
-  cards.push(["CSV export", "Every thyroid-gene SNP", `All SNPs your chip has in ${Object.keys(D.genes).length} thyroid genes.`]);
-  $("feat").innerHTML = cards.map(([n, h, p]) =>
-    `<div class="card feat"><div class="n">${esc(n)}</div><h3>${esc(h)}</h3><p>${esc(p)}</p></div>`).join("");
 })();
 
 // ------------------------------------------------------------------ file reading
